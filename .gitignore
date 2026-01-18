@@ -1,2 +1,8 @@
+# Ignore node modules
+node_modules/**
+
+# Ignore build output
+public/**
+
 # Ignore macOS system files
 **/.DS_Store
