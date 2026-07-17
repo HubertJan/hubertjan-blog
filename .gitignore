@@ -1,0 +1,10 @@
+# Ignore quarto cache folder
+/.quarto/
+**/*.quarto_ipynb
+
+# Ignore build folder by quarto
+_site/**
+
+# macOS
+.DS_Store
+**/.DS_Store
