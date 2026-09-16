@@ -8,3 +8,7 @@ _site/**
 # macOS
 .DS_Store
 **/.DS_Store
+
+# Vale style packages (restore with `vale sync`); config/vocabularies is ours
+/styles/*
+!/styles/config/

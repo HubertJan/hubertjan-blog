@@ -1,0 +1,16 @@
+[Pp]riors?
+Bayesian
+bib
+bilinearity
+html
+interpretability
+jupyter
+knitr
+LLMs?
+Quarto
+relevances
+repurpose
+revealjs
+toc
+tokenizer
+Tomaszczak

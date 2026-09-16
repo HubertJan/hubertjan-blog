@@ -1,0 +1,10 @@
+{
+  // Vale (chrischinchilla.vale-vscode): uses the project .vale.ini and styles/.
+  "vale.valeCLI.config": "${workspaceFolder}/.vale.ini",
+  "vale.valeCLI.minAlertLevel": "inherited",
+  "vale.enableSpellcheck": true,
+  "vale.doNotShowWarningForFileToBeSavedBeforeLinting": true,
+  "files.associations": {
+    "*.qmd": "markdown"
+  }
+}

@@ -96,6 +96,16 @@ unsynced:
 # The full loop: publish the built site, push to private, then sync to public.
 ship message: publish (push message) sync
 
+# --- Prose linting -----------------------------------------------------------
+
+# Lint prose in every .qmd file with Vale (config in .vale.ini).
+vale *files="index.qmd about.qmd posts":
+    vale {{files}}
+
+# Download/refresh the Vale style packages listed in .vale.ini into styles/.
+vale-sync:
+    vale sync
+
 # --- Maintenance -------------------------------------------------------------
 
 # Print the Quarto version and where it is installed.
