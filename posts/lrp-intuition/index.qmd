@@ -7,128 +7,131 @@ image: ""
 draft: false
 bibliography: references.bib
 ---
-ML interpretability research has a funny divide. Mechanistic interpretability is the name of a field originated largely by non-traditional researchers, reaching from [industry Anthropic researchers](https://transformer-circuits.pub/) to [independent BlueDot-grant researchers](https://bluedot.org/grants/rapid) to [hackers working on fun projects in their free time on Discord](https://www.eleuther.ai/papers-blog/tag/Mechanistic+Interpretability). Meanwhile, it is not hard to find the corresponding academic field of "interpretability", with PhDs, professors and graduate students working on interpretability methods for ML models for over a decade already [@erhan2009visualizing; @zeiler2014visualizing]. [To find out more about academic interpretability, an accessible introduction to a subset of this field is the [Interpretable Machine Learning book](https://christophm.github.io/interpretable-ml-book/interpretability.html).]{.aside}
+ML interpretability research has a funny divide. Mechanistic interpretability is the name of a field originated largely by non-traditional researchers, ranging from [industry researchers at Anthropic](https://transformer-circuits.pub/) to [independent BlueDot-grant researchers](https://bluedot.org/grants/rapid) to [hackers working on fun projects in their free time on Discord](https://www.eleuther.ai/papers-blog/tag/Mechanistic+Interpretability). Meanwhile, it is not hard to find the corresponding academic field of "interpretability", with PhDs, professors and graduate students working on interpretability methods for ML models for over a decade already [@erhan2009visualizing; @zeiler2014visualizing]. [To find out more about academic interpretability, an accessible introduction to a subset of this field is the [Interpretable Machine Learning book](https://christophm.github.io/interpretable-ml-book/interpretability.html).]{.aside}
 
-Today, I am not closing this gap entirely.  But I want to talk about a method developed not by mechanistic interpretability people, but by academia, and which found its way over to classic mechanistic interpretability in subtle ways.
+Today, I am not closing this gap entirely. But I want to talk about a method developed not by mechanistic interpretability people, but by academia, and which found its way over to classic mechanistic interpretability in subtle ways.
 
-I want to talk about **"Layer-wise Relevance Propagation"** (**LRP**)^[I know, this article never explains the "layer" part of the name. For that, I point to material at the end. But I believe the intuition behind what this score means is much more important than how to compute it.] [@bach2015lrp], and how it relates to a more familiar tool, gradients. Learning about LRP is, I believe, useful when you want to better understand fairly common mechanistic interpretability tools like "attribution patching" [@nanda2023attributionpatching], or the new fancy method "J-Lens" [@anthropic2026globalworkspace]. You will be able to understand LRP intuitively, when it is easily misunderstood, how it relates to gradients, and what kind of problems various "LRP rules" roughly try to solve.
+I want to talk about **"Layer-wise Relevance Propagation"** (**LRP**)^[I know, this article never explains the "layer" part of the name. For that, I point to material at the end. But I believe the intuition behind what this score means is much more important than how to compute it.] [@bach2015lrp], and how it relates to a more familiar tool, gradients. LRP is a so-called **feature attribution** method, so it attributes an output to the input features^[Mechanistic interpretability researchers tend to refer to latent features or intermediate activations as just “features”. The word "feature" in feature attribution typically refers to input features, but you can use LRP to attribute to latent features as well.] that were "responsible" for it.
+
+Learning about LRP is, I believe, useful when you want to better understand fairly common mechanistic interpretability tools like "attribution patching" [@nanda2023attributionpatching], or the fancy new method "J-Lens" [@anthropic2026globalworkspace]. You will understand LRP intuitively, see where it is easily misunderstood, how it relates to gradients, and roughly what problems the various "LRP rules" try to solve.
 
 ## "Share of" Model
 
 Before introducing any more complicated rules, semantics or terminology, we can explain the intuition behind LRP fairly simply. By doing that, we can already see many of its later challenges.
 
-Let's start by looking at one simple linear regression model. We predict the cost of a movie night $m(\vec{x})$ by the number of tickets $x_1$ and the number of popcorns bought $x_2$. To predict this, we learned two parameters $w_1=10$ and $w_2=5$. Our example model is: $m(\vec{x}) = w_1 x_1 + w_2 x_2$.
+Below, we show how LRP decides what inputs were relevant for a given output.
+
+Let's start by looking at a simple linear regression model. We predict the cost of a movie night $m(\vec{x})$ from the number of tickets $x_1$ and the number of bags of popcorn bought $x_2$. To predict this, we learned two parameters $w_1=10$ and $w_2=5$. Our example model is: $m(\vec{x}) = w_1 x_1 + w_2 x_2$.
 
 This model works, but we don't stop here. We want to know why our movie night was so expensive!
 
-Fairly easy to tell in this case. Let's say our movie night cost $m(\vec{x})$ prediction is $25$ dollars. As we bought two tickets and one popcorn, we attribute $2 \cdot 10 = 20$ to the bought tickets and we attribute $5$ to the popcorn.
+Fairly easy to tell in this case. Let's say our movie night cost $m(\vec{x})$ prediction is $25$ dollars. As we bought two tickets and one bag of popcorn, we attribute $2 \cdot 10 = 20$ to the bought tickets and we attribute $5$ to the popcorn.
 
 And guess what, this is LRP!
 
-In LRP, we would say our number of tickets feature has a **relevance** of $20$ and our number of popcorns bought has a relevance of $5$, while we have a **total relevance** of $25$. Here we also directly meet a defining principle of LRP. 
-The so-called "**relevance conservation**": 
+In LRP, we would say our number of tickets feature has a **relevance** of $20$ and our number of bags of popcorn has a relevance of $5$, while we have a **total relevance** of $25$. Here we also directly meet a defining principle of LRP.
+The so-called "**relevance conservation**":
 
-> All relevances, attributed to our features, sum to the total relevance we want to explain. 
+> All relevances attributed to our features sum to the total relevance we want to explain.
 
 
-One caveat to add (there will be a lot more later on, but this will help us with the next example): what do we do with a bias? Simple enough, we also assign relevance to it. So if our model is $m(\vec{x}) = w_1 x_1 + w_2 x_2 + b$, we just attribute the total relevance $m(\vec{x})$ to $x_1$, $x_2$ and $b$ by their share. ^[Examples like this show, that relevance conservation is in many applications much more a principle than an actual property of LRP.]{.aside}
+One caveat to add (there will be a lot more later on, but this will help us with the next example): what do we do with a bias? Simple enough, we also assign relevance to it. So if our model is $m(\vec{x}) = w_1 x_1 + w_2 x_2 + b$, we just attribute the total relevance $m(\vec{x})$ to $x_1$, $x_2$ and $b$ by their share. [Examples like this show that relevance conservation is in many applications much more a principle than an actual property of LRP.]{.aside}
 
 
 
 ## Invisible Baseline
 
-Although the model seems simple, it already helps a lot to explain various well-known problems. 
+Although the model seems simple, it already helps a lot to explain various well-known problems.
 
-E.g., let's try to explain our number of sold ice creams $m(\vec{x})$ by using the temperature $x_1$ and a binary variable for whether it is a holiday: $m(\vec{x}) = 10 \cdot x_1 + 2 \cdot x_2$. We know our model is accurate in realistic number ranges. For example, we cannot predict the number of sold ice creams if we have 100 °C, as this would be quite unrealistic (at least for now). 
+For example, let's try to explain our number of ice creams sold $m(\vec{x})$ by using the temperature $x_1$ and a binary variable for whether it is a holiday: $m(\vec{x}) = 10 \cdot x_1 + 2 \cdot x_2$. We know our model is accurate in realistic number ranges. For example, we cannot predict the number of ice creams sold at $100$\ °C, as this would be quite unrealistic (at least for now).
 
-Now let's try to find out why we only sold 2 ice creams! It was $0$ °C, hence $10 \cdot 0 = 0$, so the temperature was irrelevant for the prediction. We also had holiday, hence $2 \cdot 1 = 2$. So, we attribute our result fully to the fact that it was a holiday.
+Now let's try to find out why we only sold 2 ice creams! It was $0$\ °C, hence $10 \cdot 0 = 0$, so the temperature was irrelevant for the prediction. It was also a holiday, hence $2 \cdot 1 = 2$. So, we attribute our result fully to the fact that it was a holiday.
 
- But wait, intuitively, wasn't the fact that the temperature was so low much more relevant? Yeah, it was, so what happened?
+But wait, intuitively, wasn't the fact that the temperature was so low much more relevant? Yeah, it was, so what happened?
 
 ::: callout-note
 It might seem weird to suddenly have a binary variable in our model. But actually, this is completely fine and breaks nothing about the relevances that we computed so far. It only really limits the maximum relevances this binary input might achieve.
 :::
 
-@kindermans2017unreliability popularised this phenomenon. If we attribute a result to features based on their contributions, we have to be extremely careful about our implicit zero assumption. 
+@kindermans2017unreliability popularised this phenomenon. If we attribute a result to features based on their contributions, we have to be extremely careful about our implicit zero baseline.
 
-Our previously so simple attribution technique suddenly falls apart for this temperature feature, as the choice of °C as an input feature assumes that $0$ is the baseline. But is it really a good baseline for our explanation here? 
+Our attribution technique, so simple a moment ago, suddenly falls apart for this temperature feature, as the choice of °C as an input feature assumes that $0$ is the baseline. But is it really a good baseline for our explanation here?
 
-If we talk about a temperature in °C, is $0$ °C a good baseline? If we have to explain to our boss why we only sold $2$ ice creams today, should we blame the holiday or the fact that it was freezing cold at $0$ °C? Probably the second explanation. Therefore, let's fix this. 
+If we have to explain to our boss why we only sold $2$ ice creams today, should we blame the holiday or the fact that it was freezing cold at $0$\ °C? Probably the second explanation. Therefore, let's fix this.
 
-Let's translate our input feature $x_1$ from $0$ °C to the change compared to the baseline temperature, e.g., 18 °C. Therefore, $x_1$ is now $x_{new} = x_1 - 18$. We can do this without changing the model and therefore the prediction: $$m(\vec{x}) = 10 \cdot x_1 + 2 \cdot x_2 = 10 \cdot (x_{new} + 18) + 2 \cdot x_2 = 10 \cdot x_{new} + 2 \cdot x_2 + 180$$
- Now, if we explain our previous unsuccessful business day, we start with the temperature. The temperature has the most negative relevance for this day with a relevance of $10 \cdot (-18) = -180$, and only the holiday had a positive impact of $2$ relevance. Much better.
+Let's re-express $x_1$ as the deviation from a baseline temperature, say $18$\ °C: $x_{\text{new}} = x_1 - 18$. We can do this without changing the model and therefore the prediction: $$m(\vec{x}) = 10 \cdot x_1 + 2 \cdot x_2 = 10 \cdot (x_{\text{new}} + 18) + 2 \cdot x_2 = 10 \cdot x_{\text{new}} + 2 \cdot x_2 + 180$$
+Now, if we explain our previous unsuccessful business day, we start with the temperature. The temperature has the most negative relevance for this day, $10 \cdot (-18) = -180$, and only the holiday has a positive relevance of $2$. The bias absorbs $180$ relevance, so we again have a total relevance of $180 + 2 -180 = 2$. Much better. ^[The interpretation of the bias relevance is often a bit less clear. In this case, we would just say that by default ($18$ °C, no holiday) we already expect $180$ sales, which we attribute to the bias term.]
 
-This conclusion might seem trivial if you think about it, but we can reduce many "problems" of LRP to an implicit null assumption that went unquestioned.
+This conclusion might seem trivial if you think about it, but we can reduce many "problems" of LRP to an implicit zero baseline that went unquestioned.
 
 ::: callout-note
-I call the "implicit null assumption" the main Achilles heel of LRP. But actually, there is even a larger conceptual assumption. What if we have non-linear input features? Is LRP of any use here? Why not?
+I call the "implicit zero baseline" the main Achilles' heel of LRP. But actually, there is an even larger conceptual assumption. What if we have non-linear input features? Is LRP of any use here? Why or why not?
 :::
 
-This model can visualise even more subtleties of LRP and its semantics.
+This model can illustrate even more subtleties of LRP and its semantics.
 
-E.g., think about what happens in a shared household. You earned 100 Euros this month, but your partner spent 99 Euros this month. The total income this month will be $100 + (-99) = 1$, but the relevances attributed to both of you are much higher in magnitude: you will get an attribution of +100; your partner will get -99. We follow all LRP rules; conservation holds. But the results seem weird. Why? 
+For example, think about what happens in a shared household. You earned 100 euros this month, but your partner spent 99 euros. The total income this month will be $100 + (-99) = 1$, but the relevances attributed to both of you are much higher in magnitude: you will get an attribution of +100; your partner will get -99. We follow all LRP rules; conservation holds. But the results seem weird. Why?
 
-This is the so-called **relevance cancellation**, large positive and negative relevances that mostly offset each other, leaving a small total. [Relevance cancellation becomes a larger issue in deeper networks, where small intermediate relevances might suddenly grow into large cancellation terms.]{.aside}
+This is the so-called **relevance cancellation**: large positive and negative relevances that mostly offset each other, leaving a small total. [Relevance cancellation becomes a larger issue in deeper networks, where small intermediate relevances might suddenly grow into large cancellation terms.]{.aside}
 
 ## Local Sensitivity
 
-Now that we understand LRP, let's try to understand it on a deeper level. For that, we will understand it in relation to a seemingly different attribution method, which you might be much more familiar with: **gradients**. [This exact usage actually has a name, *vanilla gradient*, introduced by @baehrens2010explain and popularised by @simonyan2014deep. It is intuitively used by mechanistic interpretability in attribution patching [@nanda2023attributionpatching].]{.aside}
+Now that we understand LRP, let's try to understand it on a deeper level. To do so, we will look at it in relation to a seemingly different attribution method, which you might be much more familiar with: **gradients**. [This exact usage actually has a name, *vanilla gradient*, introduced by @baehrens2010explain and popularised by @simonyan2014deep. It is implicitly used by mechanistic interpretability in attribution patching [@nanda2023attributionpatching].]{.aside}
 
-Gradients are a classical academic interpretability method, more widely known in the AI safety space and even easier to understand for most ML practitioners. Most famously, we use gradients to optimise neural networks and transformers. Unlike in training via gradient descent, we will not compute gradients here regarding the training weights, but regarding the input variables.
+Gradients are a classical academic interpretability method, more widely known in the AI safety space and even easier to understand for most ML practitioners. Most famously, we use gradients to optimise neural networks and transformers. Unlike in training via gradient descent, we will not compute gradients here with respect to the trainable weights, but with respect to the input variables.
 
-To warm up, let's get back to our movie night cost $m(\vec{x})$, our input features, the number of tickets $x_1$ and the number of popcorns $x_2$ bought, and the prediction model $m(\vec{x}) = w_1 x_1 + w_2 x_2$ based on our model weights $w_1, w_2$.
+To warm up, let's get back to our movie night cost $m(\vec{x})$, our input features, the number of tickets $x_1$ and the number of bags of popcorn $x_2$ bought, and the prediction model $m(\vec{x}) = w_1 x_1 + w_2 x_2$ based on our model weights $w_1, w_2$.
 
 A **derivative** describes the rate of change of the output with respect to one input variable: if we nudge that input, how does the output move? For a function of several variables we compute a **partial derivative** per variable, and the gradient is just all of them collected together. The part worth holding on to is that a derivative is always evaluated at a specific, complete input. There is no gradient "of a function" in the abstract, only a gradient at a point.
-Our movie night cost example hides this nicely. The derivative regarding the number of tickets $x_1$ is just the weight $w_1$, whatever $x_1$ and $x_2$ happen to be. Here the evaluation point doesn't matter, but that's a property of linear models, not of derivatives.
 
-A still useful description of this number is that it describes what would happen if we changed the input $x_1$ by an infinitely small amount $\Delta x_1$: the output would change by $\Delta x_1 \cdot w_1$. As you might realise, in this linear case this is even exactly the correct answer.
+Our movie night cost example hides this nicely. The derivative with respect to the number of tickets $x_1$ is just the weight $w_1$, whatever $x_1$ and $x_2$ happen to be. Here the evaluation point doesn't matter, but that's a property of linear models, not of derivatives.
 
-But does this number help us in terms of explanations? So, given an input, we now receive the gradient, which is the collection of derivatives regarding all input features. What do we learn? We get a kind of **local sensitivity**. 
+A still useful description of this number is that it describes what would happen if we changed the input $x_1$ by an infinitesimally small amount $\Delta x_1$: the output would change by $\Delta x_1 \cdot w_1$. As you might realise, in this linear case this is in fact exactly correct.
 
-The explanation is not explaining how we got here. It tells you that if you changed an input feature by a bit, it would change the output either positively or negatively, a lot or not at all. The *sensitivity is itself a description of what happens for an "infinitely" small change*. 
+But does this number help us in terms of explanations? So, given an input, we now receive the gradient, which is the collection of derivatives with respect to all input features. What do we learn? We get a kind of **local sensitivity**.
 
-So a real change bigger than "infinitely small" might actually change the output in a different way, but it suggests that this approximation is still often helpful. [^1]
+The explanation does not explain how we got here. It tells you that if you changed an input feature by a bit, it would change the output either positively or negatively, a lot or not at all. *The sensitivity is itself a description of what happens for an "infinitesimally" small change*.
 
-[^1]: Until it isn't.
+So a real change bigger than "infinitesimally small" might actually change the output in a different way, though the approximation is often still helpful.^[Until it isn't.]
 
-So when is local sensitivity not helpful? If we want to explain how an output came to be. Because an output was not caused by an "infinitely" small change to one input, but probably by a large change in a set of inputs. This is where the model breaks. It might be a good explanation for models that behave linearly more globally, but then the model itself is already easy to understand without this additional tool.
+So when is local sensitivity not helpful? When we want to explain how an output came to be. Because an output was not caused by an "infinitesimally" small change to one input, but probably by a large change in a set of inputs. This is where the model breaks. It might be a good explanation for models that are more globally linear, but then the model itself is already easy to understand without this additional tool.
 
-## Integrated Local Sensitivity is Relevance
+## Integrated Local Sensitivity Is Relevance
 
-What is more interesting here is how local sensitivity connects to relevance. Relevance most often provides the more intuitive answer to a request for an explanation: whose fault is this, not what would happen if one thing changed a tiny bit? But one crucial annoyance of LRP is noticeably absent in local sensitivity: we make no assumption about a zero baseline.
+What is more interesting here is how local sensitivity connects to relevance. Relevance most often provides the more intuitive answer to a request for an explanation: "whose fault is this?" rather than "what would happen if one thing changed a tiny bit?" But one crucial annoyance of LRP is notably absent in local sensitivity: we make no assumption about a zero baseline.
 
 This is the nice thing about the notion of "local sensitivity": it works truly without a baseline. This will become even more obvious if we try to connect this notion of "local sensitivity" to our relevance built on a baseline.
 
-So, if local sensitivity describes the sensitivity of individual features at a specific input, relevance is the approximated integration of local sensitivity between two points: the zero baseline $\vec{x} = 0$ (with output $m(0^\to)$), and the actual input $\vec{x}$. Previously, we asked how a tiny change at a point $\vec{x}$ to a variable $x_1$ would change our output $m(\vec{x})$; now we ask: by changing $x_1$ from $0$ to $x_1$, how did it change the output $m(\vec{x})$?
+So, if local sensitivity describes the sensitivity of individual features at a specific input, relevance is an approximate integral of local sensitivity between two points: the zero baseline $\vec{x} = \vec{0}$ (with output $m(\vec{0})$), and the actual input $\vec{x}$. Previously, we asked how a tiny change at a point $\vec{x}$ to a variable $x_1$ would change our output $m(\vec{x})$; now we ask: how much did moving $x_1$ from $0$ to its actual value change the output $m(\vec{x})$?
 
-The correct, non-approximated method to compute this would be to compute gradients for many intermediate inputs (actually infinitely many) between the zero baseline and the input, which we can use to derive the real integral of the rate of change. [By the way, this thought experiment is itself a real method, named "Integrated Gradients" [@sundararajan2017axiomatic].]{.aside}
+The correct, exact method to compute this would be to compute gradients for many intermediate inputs (actually infinitely many) between the zero baseline and the input, which we can use to derive the real integral of the rate of change. [By the way, this thought experiment is itself a real method, named "Integrated Gradients" [@sundararajan2017axiomatic].]{.aside}
 
-Instead, we do what I warned against before: "we use our local sensitivity as an approximation for global behaviour". And this is exactly the reason why we often hear that "LRP" is just gradient \* input in many simple cases [@shrikumar2016notjust], because it is. We assume the local sensitivities (=gradient) of each input apply globally; therefore, our relevance of each input has to be local sensitivity times input. ^[Framing LRP as a kind of approximated integration to a zero baseline is a rather unconventional framing, but helpful, I believe. The more conventional lens through which to look at LRP is to view it as a kind of "deep Taylor decomposition".]
+Instead, we do what I warned against before: "we use our local sensitivity as an approximation for global behaviour". And this is exactly the reason why we often hear that LRP is just gradient × input in many simple cases [@shrikumar2016notjust], because it is. We assume the local sensitivities (i.e., the gradient) of each input apply globally; therefore, the relevance of each input has to be local sensitivity times input.^[Framing LRP as a kind of approximate integration to a zero baseline is a rather unconventional framing, but helpful, I believe. The more conventional lens through which to look at LRP is to view it as a kind of "deep Taylor decomposition".]
 
-The more subtle assumption is the zero baseline. But it follows from how we distribute relevance to features. As you remember, we distributed relevances based on the contribution of the feature to the output. By definition, a feature that contributed $0$ will get zero relevance, no matter how much total relevance we distribute. This is where we introduced this zero baseline. [Attribution patching [@nanda2023attributionpatching] is an example of a method that uses "relevances with a non-zero baseline".]{.aside}
+The more subtle assumption is the zero baseline. But it follows from how we distribute relevance to features. As you may remember, we distributed relevances based on the contribution of the feature to the output. By definition, a feature that contributed $0$ will get zero relevance, no matter how much total relevance we distribute. This is where we introduced this zero baseline. [Attribution patching [@nanda2023attributionpatching] is an example of a method that uses "relevances with a non-zero baseline".]{.aside}
 
 ::: callout-note
 Some readers might complain now about the relevances we attributed to the bias: how can a bias have any relevance if we assume a zero baseline? Biases always contribute the same value, so by definition they also contribute that value at the zero baseline. Yeah, this is one caveat of LRP in this form: we extend the zero baseline assumption also to the bias and pretend it contributes $0$ to the output at the zero baseline.
 :::
 
-The cleverness of LRP starts in cases where we realise that we can *approximate local sensitivity with better assumptions that better match the exact model*. This is where our initial toy model stops being useful. Even though we could use it to explain the semantics of LRP and some of its challenges, we cannot explain what LRP does "smarter" sometimes to improve upon its assumptions. Therefore, we need a scenario where our assumptions are obviously broken and where we might find a better solution.
+The cleverness of LRP starts in cases where we realise that we can *approximate local sensitivity with better assumptions that better match the exact model*. This is where our initial toy model stops being useful. Even though we could use it to explain the semantics of LRP and some of its challenges, we cannot explain what LRP sometimes does "smarter" to improve upon its assumptions. Therefore, we need a scenario where our assumptions are obviously broken and where we might find a better solution.
 
 ::: callout-note
-Those improvements that LRP applies are why some people claim that "LRP" is more faithful than normal gradients [@rezaeijafari2025relp], though this depends on the choice of rules [@sixt2020explanations]. To connect those LRP rules back to normal gradients and local sensitivity computation: nothing stops us from applying the same LRP custom rules for computing a local sensitivity too. We typically use them to compute relevances, and we design them for this purpose. But conceptually, you can repurpose many of those rules to compute a kind of "local sensitivity".
+These improvements that LRP applies are why some people claim that LRP is more faithful than plain gradients [@rezaeijafari2025relp], though this depends on the choice of rules [@sixt2020explanations]. To connect these LRP rules back to plain gradients and local sensitivity computation: nothing stops us from applying the same custom LRP rules for computing a local sensitivity too. We typically use them to compute relevances, and we design them for this purpose. But conceptually, you can repurpose many of these rules to compute a kind of "local sensitivity".
 :::
 
-## Bonus: Bilinear is annoying
+## Bonus: Bilinear Is Annoying
 
-Now, we could talk about many LRP rules, and what they fix and solve. Some of them solve a more general relevance semantics issue. Examples are LRP-epsilon and the relevance explosion in deep neural networks caused by relevance cancellation (from the shared household example above); others adapt to domain-specific assumptions about inputs, such as the $z^B$ rule.
+Now, we could talk about many LRP rules, and what they fix and solve. Some of them solve more general issues of relevance semantics: LRP-epsilon, for example, addresses the relevance explosion in deep neural networks caused by relevance cancellation (see the shared household example above). Others adapt to domain-specific assumptions about inputs, such as the $z^B$ rule.
 
-But I want to talk about a different issue in this last section, about the most annoying case happening in transformers: bilinearity.
+But I want to talk about a different issue in this last section, about the most annoying case that occurs in transformers: bilinearity.
 
 What's wrong with a model with the inputs $x_1, x_2$ that we describe as $m(\vec{x}) = x_1 x_2$?
 
-Let's try by computing the gradient for $m(\vec{x})$ over $x_1$ at input $\vec{x} = (x_1, x_2)$. This time, the gradient is not independent of the input $\vec{x}$; it is $x_2$, as you might have guessed. Symmetrically, the gradient for $m(\vec{x})$ over $x_2$ at $\vec{x}$ is $x_1$. As we have learned so far, relevance is just gradient \* input, so we know the relevance is just $x_1 x_2$ for both inputs… wait, our total relevance has to sum to $x_1 x_2$ as this is our output, but both inputs already have a relevance of $x_1 x_2$ each. So the relevances are clearly wrong. We cannot just apply our known rules to this bilinear example.
+Let's start by computing the partial derivative of $m(\vec{x})$ with respect to $x_1$ at input $\vec{x} = (x_1, x_2)$. This time, the derivative is not independent of the input $\vec{x}$; it is $x_2$, as you might have guessed. Symmetrically, the partial derivative of $m(\vec{x})$ with respect to $x_2$ at $\vec{x}$ is $x_1$. As we have learned so far, relevance is just gradient × input, so we know the relevance is just $x_1 x_2$ for both inputs… wait, our total relevance has to sum to $x_1 x_2$ as this is our output, but both inputs already have a relevance of $x_1 x_2$ each. So the relevances are clearly wrong. We cannot just apply our known rules to this bilinear example.
 
-The mathematically most sound idea is to integrate along the straight path from the zero baseline to our input, instead of pretending the gradient is constant. We write that path as $\vec{x}(\alpha) = (\alpha x_1, \alpha x_2)$, where $\alpha$ runs from $0$ (the baseline) to $1$ (our actual input), and integrate each feature's local sensitivity along it:
-$$R_1 = \int_0^1 (\alpha x_2) \cdot x_1 d\alpha = \frac{x_1 x_2}{2}, \qquad R_2 = \int_0^1 (\alpha x_1) \cdot x_2 d\alpha = \frac{x_1 x_2}{2}$$
+The most mathematically sound idea is to integrate along the straight path from the zero baseline to our input, instead of pretending the gradient is constant. We write that path as $\vec{x}(\alpha) = (\alpha x_1, \alpha x_2)$, where $\alpha$ runs from $0$ (the baseline) to $1$ (our actual input), and integrate each feature's local sensitivity along it:
+$$R_1 = \int_0^1 (\alpha x_2) \cdot x_1 \, d\alpha = \frac{x_1 x_2}{2}, \qquad R_2 = \int_0^1 (\alpha x_1) \cdot x_2 \, d\alpha = \frac{x_1 x_2}{2}$$
 Note that we integrate over $\alpha$, not over $x_1$: the two inputs travel from baseline to input together, and that is exactly what splits the product in half. Both features get half the output, conservation holds, and the symmetry matches our intuition that neither factor is more to blame than the other. But what are good local rules to approximate this result?
 
 There isn't actually a clear answer, but there are a few that are more or less helpful :) [@ali2022xai; @achtibat2024attnlrp; @eberle2022bilrp]
@@ -137,11 +140,11 @@ There isn't actually a clear answer, but there are a few that are more or less h
 
 I didn't cover much of the content of LRP. I mean, I never even showed you the classical LRP formula :D But I believe this mental model is enough to either understand LRP and its relationship with gradients better, or to serve as the perfect starting point to dig deeper into how we compute LRP in deeper networks, which rules we implement and how we deal with fun edge cases.
 
-If you want to dive deeper, I recommend starting with [this video](https://www.youtube.com/watch?v=b26IZ2aYGjU), which mainly introduces the actual layer-wise implementation of LRP (something we entirely ignored in this article). A more comprehensive and traditional introduction is the book chapter ["Layer-Wise Relevance Propagation: An Overview"](https://iphome.hhi.de/samek/pdf/MonXAI19.pdf) [@montavon2019lrpoverview]. Find a practical application of LRP to the Othello toy model in [this article](https://yp-edu.github.io/articles/layer-wise-relevance-propagation).
+If you want to dive deeper, I recommend starting with [this video](https://www.youtube.com/watch?v=b26IZ2aYGjU), which mainly introduces the actual layer-wise implementation of LRP (something we entirely ignored in this article). A more comprehensive and traditional introduction is the book chapter ["Layer-Wise Relevance Propagation: An Overview"](https://iphome.hhi.de/samek/pdf/MonXAI19.pdf) [@montavon2019lrpoverview]. You can find a practical application of LRP to the Othello toy model in [this article](https://yp-edu.github.io/articles/layer-wise-relevance-propagation).
 
 If you wonder how someone might apply LRP to a transformer, I would refer you to the AttnLRP paper [@achtibat2024attnlrp].
 
-And if you have learned enough about LRP, I recommend reading @blank2026rlens and @rezaeijafari2025relp. Both methods don't directly compute typical relevances, but use LRP rules within gradient-based methods. So, they are perfect examples of how LRP might motivate new techniques.
+And once you're comfortable with LRP, I recommend reading @blank2026rlens and @rezaeijafari2025relp. Neither method directly computes typical relevances, but both use LRP rules within gradient-based methods. So, they are perfect examples of how LRP might motivate new techniques.
 
 ## References
 
