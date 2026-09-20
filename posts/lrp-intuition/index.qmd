@@ -2,7 +2,7 @@
 title: "A missing lecture in mechanistic interpretability: Feature Attribution and LRP"
 author: "Hubert Tomaszczak"
 date: "2026-09-15"
-categories: [news]
+categories: [interpretability]
 image: ""
 draft: false
 bibliography: references.bib

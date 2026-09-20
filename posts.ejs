@@ -1,0 +1,11 @@
+```{=html}
+<ul class="list posts-list">
+<% for (const item of items) { %>
+  <li <%= metadataAttrs(item) %>>
+    <span class="listing-date post-date"><%= item.date %></span>
+    <a href="<%- item.path %>" class="listing-title post-title"><%= item.title %></a><% if (item.categories && item.categories.length) { %>
+    <span class="listing-categories post-tags"><% for (const c of item.categories) { %><span class="post-tag">[<%= c %>]</span><% } %></span><% } %>
+  </li>
+<% } %>
+</ul>
+```

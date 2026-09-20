@@ -11,18 +11,20 @@ website:
   site-url: https://hubertjan.de
   title: "Hubert Tomaszczak"
   navbar:
+    title: false
+    background: light
+    foreground: dark
     right:
       - text: Blog
         href: index.qmd
       - text: About
         href: about.qmd
-      - icon: github
-        href: https://github.com/hubertjan
 
 format:
   html:
     theme:
       - cosmo
       - brand
+      - theme.scss
     css: styles.css
     toc: false

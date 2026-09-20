@@ -1,77 +1,320 @@
 /* css styles */
 
-/* Give the single-page layout a bit more breathing room. */
+/* ------------------------------------------------------------------------
+   Global: black on white, clear 1px black rules, no muted greys.
+   ------------------------------------------------------------------------ */
+
+body {
+  color: #000;
+  background: #fff;
+}
+
 main.content {
   padding-bottom: 4rem;
 }
 
+hr {
+  border: 0;
+  border-top: 1px solid #000;
+  opacity: 1;
+  margin: 2rem 0 1.5rem;
+}
+
+/* Flat navbar: no shadow, no border. The only rule on the front page is the
+   one under the big name. */
+#quarto-header,
+.navbar {
+  box-shadow: none !important;
+  border-bottom: 0;
+}
+
+.navbar .nav-link,
+.navbar .nav-link .menu-text {
+  color: #000;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active,
+.navbar .nav-link.active .menu-text {
+  color: #1a5fb4;
+}
+
+/* ------------------------------------------------------------------------
+   Front page: name shown once, big; a hairline below; compact post list.
+   (The header sits inside <main> only on plain pages like index.qmd; the
+   about page and banner pages place it elsewhere, so they are unaffected.)
+   ------------------------------------------------------------------------ */
+
+main.content > #title-block-header.quarto-title-block.default {
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #000;
+}
+
+/* The name is set in a serif wherever it appears as a page title. */
+main.content > #title-block-header .quarto-title h1.title,
+.quarto-about-jolla #title-block-header h1.title {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+    "Times New Roman", serif;
+  font-weight: 400;
+  font-size: 2.4rem;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  margin-bottom: 0.15rem;
+  color: #000;
+}
+
+main.content > #title-block-header .quarto-title p.subtitle {
+  font-size: 1rem;
+  font-weight: 400;
+  margin: 0;
+  color: #000;
+}
+
+/* The front page has no author/date metadata; drop the empty block. */
+main.content > #title-block-header .quarto-title-meta {
+  display: none;
+}
+
+/* Post list: `date  title [tag]` on one line, monospace date and tag. */
+.posts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.posts-list li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 0.9rem;
+  line-height: 1.55;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #000;
+}
+
+.posts-list li:last-child {
+  border-bottom: 0;
+}
+
+.posts-list .post-date {
+  flex: 0 0 auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #000;
+}
+
+.posts-list .post-title {
+  flex: 1 1 20rem;
+  font-size: 1.05rem;
+  color: #1a5fb4;
+  text-decoration: none;
+}
+
+.posts-list .post-title:hover {
+  text-decoration: underline;
+}
+
+.posts-list .post-tags {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #000;
+}
+
+.posts-list .post-tag + .post-tag {
+  margin-left: 0.35rem;
+}
+
+.listing-no-matching {
+  margin-top: 1rem;
+}
+
+/* Category filter in the margin: plain black text, no grey pills. */
+.quarto-listing-category-title {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: none;
+}
+
+.quarto-listing-category .category {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  color: #000;
+  padding-left: 0;
+  cursor: pointer;
+}
+
+.quarto-listing-category .category:hover,
+.quarto-listing-category .category.active {
+  color: #1a5fb4;
+  font-weight: 700;
+}
+
+.quarto-listing-category .quarto-category-count {
+  color: #000;
+}
+
+/* Social links under the bio. */
+/* Contact buttons. Quarto only styles .about-links inside the jolla about
+   template, so these rules are unscoped to reuse the same markup on the
+   index page. */
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.8em;
+  row-gap: 15px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  margin-top: 1.5rem;
+}
+
+.about-links .about-link {
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 4px;
+  font-size: 0.8em;
+  padding: 0.25em 0.5em;
+  text-decoration: none;
+}
+
+.about-links .about-link i.bi {
+  margin-right: 0.15em;
+}
+
+.about-links .about-link:hover {
+  color: #fff;
+  background: #000;
+}
+
+/* ------------------------------------------------------------------------
+   Post pages: white title banner with a black rule under it, no grey meta.
+   ------------------------------------------------------------------------ */
+
+.quarto-title-banner {
+  border-bottom: 1px solid #000;
+  padding-top: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.quarto-title-banner h1.title {
+  color: #000;
+}
+
+.quarto-title .quarto-categories .quarto-category {
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 0;
+  opacity: 1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+#title-block-header.quarto-title-block.default .quarto-title-meta-heading,
+#title-block-header.quarto-title-block.default .quarto-title-meta-contents,
+#title-block-header.quarto-title-block.default .quarto-title-meta-contents p {
+  color: #000;
+  opacity: 1;
+}
+
+#title-block-header.quarto-title-block.default .quarto-title-meta-heading {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ------------------------------------------------------------------------
+   About page: everything left-aligned (portrait, name, links and text) in a
+   readable-width column. The jolla template centres these by default.
+   ------------------------------------------------------------------------ */
+
+.quarto-about-jolla {
+  align-items: flex-start;
+  max-width: 40rem;
+  margin: 2rem auto 0;
+}
+
+.quarto-about-jolla .about-image {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.quarto-about-jolla #title-block-header,
+.quarto-about-jolla .quarto-title h1.title,
+.quarto-about-jolla .quarto-title .description {
+  text-align: left;
+  width: 100%;
+}
+
+.quarto-about-jolla main {
+  text-align: left;
+  width: 100%;
+}
+
+.quarto-about-jolla .about-sep {
+  width: 100%;
+}
+
 .about-entity .about-image {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
+  border: 1px solid #000;
 }
 
 /* Section headings on the bio page. */
-.quarto-about-trestles h2 {
+.quarto-about-jolla h2 {
   margin-top: 2.5rem;
-  font-size: 1.15rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #6c757d;
-  border-bottom: 1px solid #e9ecef;
+  color: #000;
+  border-bottom: 1px solid #000;
   padding-bottom: 0.4rem;
 }
 
-/* Experience / education entries.
-   Each entry is: dt = role + date, dd = organisation, dd = description. */
-.experience dl {
-  margin-bottom: 0;
-}
-
-.experience dt {
-  font-weight: 400;
-  margin-top: 1.6rem;
-  overflow: hidden; /* contain the floated date */
-}
-
-.experience dt strong {
-  font-weight: 600;
-}
-
-/* Date range, pushed to the right of the role line. */
-.experience .when {
-  float: right;
+/* Bullet lists on the about page, with a year column on the right. */
+.about-list ul {
+  list-style: none;
   padding-left: 1rem;
-  color: #868e96;
-  font-size: 0.85em;
+}
+
+.about-list li {
+  position: relative;
+  padding-right: 6.5rem; /* room for the year column */
+  margin-bottom: 0.7rem;
+  color: #000;
+  text-align: start;
+}
+
+.about-list li::before {
+  content: "\2022";
+  position: absolute;
+  left: -1rem;
+  color: #000;
+}
+
+.about-list .when {
+  position: absolute;
+  top: 0.15em;
+  right: 0;
+  color: #000;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.experience dd {
-  margin-left: 0;
-  padding-left: 1rem;
-  border-left: 2px solid #e9ecef;
-}
-
-/* First dd: the organisation and location. */
-.experience dt + dd {
-  margin-top: 0.15rem;
-  padding-top: 0.15rem;
-  color: #6c757d;
-  font-size: 0.95em;
-}
-
-/* Second dd: what the role actually was. */
-.experience dd + dd {
-  margin-top: 0.35rem;
-  padding-bottom: 0.15rem;
-  color: #495057;
-}
-
 @media (max-width: 600px) {
-  .experience .when {
-    float: none;
+  .about-list li {
+    padding-right: 0;
+  }
+  .about-list .when {
+    position: static;
     display: block;
-    padding-left: 0;
+    margin-top: 0.1rem;
   }
 }

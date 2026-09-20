@@ -1,15 +1,30 @@
 ---
 title: "Hubert Tomaszczak"
+subtitle: "Notes on interpretability and Computer Science."
 listing:
+  id: posts
   contents: "posts/*/index.qmd"
+  template: posts.ejs
   feed: true
   sort: "date desc"
-  type: default
+  date-format: "DD MMM YYYY"
   categories: true
   sort-ui: false
   filter-ui: false
-page-layout: full
-title-block-banner: true
+page-layout: article
 ---
 
-I am a research assistant at the [Fraunhofer Heinrich Hertz Institute](https://www.hhi.fraunhofer.de/) in Berlin and a Master's student in Computer Science at the [Hasso Plattner Institute](https://hpi.de/) in Potsdam. More about me on the [about page](about.qmd).
+::: {#posts}
+:::
+
+---
+
+I am a research assistant at the [Fraunhofer Heinrich Hertz Institute](https://www.hhi.fraunhofer.de/) in Berlin and a Master's student in Computer Science at the [Hasso Plattner Institute](https://hpi.de/) in Potsdam.
+
+```{=html}
+<div class="about-links">
+  <a href="mailto:mail@hubertjan.de" class="about-link"><i class="bi bi-envelope"></i> <span class="about-link-text">Email</span></a>
+  <a href="https://linkedin.com/in/hubert-tomaszczak-84b9412a9/" class="about-link"><i class="bi bi-linkedin"></i> <span class="about-link-text">LinkedIn</span></a>
+  <a href="https://github.com/hubertjan" class="about-link"><i class="bi bi-github"></i> <span class="about-link-text">GitHub</span></a>
+</div>
+```
