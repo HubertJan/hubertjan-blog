@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Hubert Tomaszczak">
+<meta name="dcterms.date" content="2026-09-15">
+
+<title>A missing lecture in mechanistic interpretability: Feature Attribution and LRP – Hubert Tomaszczak</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-0ca92dc4fd6320ed4ed765e34d1569f9.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../index.html"> 
+<span class="menu-text">Blog</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">A missing lecture in mechanistic interpretability: Feature Attribution and LRP</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">interpretability</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Hubert Tomaszczak </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">September 15, 2026</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block page-columns page-full" id="quarto-document-content">
+
+
+
+
+
+<div class="page-columns page-full"><p>ML interpretability research has a funny divide. Mechanistic interpretability is the name of a field originated largely by non-traditional researchers, ranging from <a href="https://transformer-circuits.pub/">industry researchers at Anthropic</a> to <a href="https://bluedot.org/grants/rapid">independent BlueDot-grant researchers</a> to <a href="https://www.eleuther.ai/papers-blog/tag/Mechanistic+Interpretability">hackers working on fun projects in their free time on Discord</a>. Meanwhile, it is not hard to find the corresponding academic field of “interpretability”, with PhDs, professors and graduate students working on interpretability methods for ML models for over a decade already <span class="citation" data-cites="erhan2009visualizing zeiler2014visualizing">(<a href="#ref-erhan2009visualizing" role="doc-biblioref">Erhan et al. 2009</a>; <a href="#ref-zeiler2014visualizing" role="doc-biblioref">Zeiler and Fergus 2014</a>)</span>. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">To find out more about academic interpretability, an accessible introduction to a subset of this field is the <a href="https://christophm.github.io/interpretable-ml-book/interpretability.html">Interpretable Machine Learning book</a>.</span></div></div>
+<p>Today, I am not closing this gap entirely. But I want to talk about a method developed not by mechanistic interpretability people, but by academia, and which found its way over to classic mechanistic interpretability in subtle ways.</p>
+<p>I want to talk about <strong>“Layer-wise Relevance Propagation”</strong> (<strong>LRP</strong>)<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> <span class="citation" data-cites="bach2015lrp">(<a href="#ref-bach2015lrp" role="doc-biblioref">Bach et al. 2015</a>)</span>, and how it relates to a more familiar tool, gradients. LRP is a so-called <strong>feature attribution</strong> method, so it attributes an output to the input features<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> that were “responsible” for it.</p>
+<p>Learning about LRP is, I believe, useful when you want to better understand fairly common mechanistic interpretability tools like “attribution patching” <span class="citation" data-cites="nanda2023attributionpatching">(<a href="#ref-nanda2023attributionpatching" role="doc-biblioref">Nanda 2023</a>)</span>, or the fancy new method “J-Lens” <span class="citation" data-cites="anthropic2026globalworkspace">(<a href="#ref-anthropic2026globalworkspace" role="doc-biblioref">Anthropic 2026</a>)</span>. You will understand LRP intuitively, see where it is easily misunderstood, how it relates to gradients, and roughly what problems the various “LRP rules” try to solve.</p>
+<section id="share-of-model" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="share-of-model">“Share of” Model</h2>
+<p>Before introducing any more complicated rules, semantics or terminology, we can explain the intuition behind LRP fairly simply. By doing that, we can already see many of its later challenges.</p>
+<p>Below, we show how LRP decides what inputs were relevant for a given output.</p>
+<p>Let’s start by looking at a simple linear regression model. We predict the cost of a movie night <span class="math inline">\(m(\vec{x})\)</span> from the number of tickets <span class="math inline">\(x_1\)</span> and the number of bags of popcorn bought <span class="math inline">\(x_2\)</span>. To predict this, we learned two parameters <span class="math inline">\(w_1=10\)</span> and <span class="math inline">\(w_2=5\)</span>. Our example model is: <span class="math inline">\(m(\vec{x}) = w_1 x_1 + w_2 x_2\)</span>.</p>
+<p>This model works, but we don’t stop here. We want to know why our movie night was so expensive!</p>
+<p>Fairly easy to tell in this case. Let’s say our movie night cost <span class="math inline">\(m(\vec{x})\)</span> prediction is <span class="math inline">\(25\)</span> dollars. As we bought two tickets and one bag of popcorn, we attribute <span class="math inline">\(2 \cdot 10 = 20\)</span> to the bought tickets and we attribute <span class="math inline">\(5\)</span> to the popcorn.</p>
+<p>And guess what, this is LRP!</p>
+<p>In LRP, we would say our number of tickets feature has a <strong>relevance</strong> of <span class="math inline">\(20\)</span> and our number of bags of popcorn has a relevance of <span class="math inline">\(5\)</span>, while we have a <strong>total relevance</strong> of <span class="math inline">\(25\)</span>. Here we also directly meet a defining principle of LRP. The so-called “<strong>relevance conservation</strong>”:</p>
+<blockquote class="blockquote">
+<p>All relevances attributed to our features sum to the total relevance we want to explain.</p>
+</blockquote>
+<div class="page-columns page-full"><p>One caveat to add (there will be a lot more later on, but this will help us with the next example): what do we do with a bias? Simple enough, we also assign relevance to it. So if our model is <span class="math inline">\(m(\vec{x}) = w_1 x_1 + w_2 x_2 + b\)</span>, we just attribute the total relevance <span class="math inline">\(m(\vec{x})\)</span> to <span class="math inline">\(x_1\)</span>, <span class="math inline">\(x_2\)</span> and <span class="math inline">\(b\)</span> by their share. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">Examples like this show that relevance conservation is in many applications much more a principle than an actual property of LRP.</span></div></div>
+</section>
+<section id="invisible-baseline" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="invisible-baseline">Invisible Baseline</h2>
+<p>Although the model seems simple, it already helps a lot to explain various well-known problems.</p>
+<p>For example, let’s try to explain our number of ice creams sold <span class="math inline">\(m(\vec{x})\)</span> by using the temperature <span class="math inline">\(x_1\)</span> and a binary variable for whether it is a holiday: <span class="math inline">\(m(\vec{x}) = 10 \cdot x_1 + 2 \cdot x_2\)</span>. We know our model is accurate in realistic number ranges. For example, we cannot predict the number of ice creams sold at <span class="math inline">\(100\)</span>&nbsp;°C, as this would be quite unrealistic (at least for now).</p>
+<p>Now let’s try to find out why we only sold 2 ice creams! It was <span class="math inline">\(0\)</span>&nbsp;°C, hence <span class="math inline">\(10 \cdot 0 = 0\)</span>, so the temperature was irrelevant for the prediction. It was also a holiday, hence <span class="math inline">\(2 \cdot 1 = 2\)</span>. So, we attribute our result fully to the fact that it was a holiday.</p>
+<p>But wait, intuitively, wasn’t the fact that the temperature was so low much more relevant? Yeah, it was, so what happened?</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>It might seem weird to suddenly have a binary variable in our model. But actually, this is completely fine and breaks nothing about the relevances that we computed so far. It only really limits the maximum relevances this binary input might achieve.</p>
+</div>
+</div>
+<p><span class="citation" data-cites="kindermans2017unreliability">Kindermans et al. (<a href="#ref-kindermans2017unreliability" role="doc-biblioref">2017</a>)</span> popularised this phenomenon. If we attribute a result to features based on their contributions, we have to be extremely careful about our implicit zero baseline.</p>
+<p>Our attribution technique, so simple a moment ago, suddenly falls apart for this temperature feature, as the choice of °C as an input feature assumes that <span class="math inline">\(0\)</span> is the baseline. But is it really a good baseline for our explanation here?</p>
+<p>If we have to explain to our boss why we only sold <span class="math inline">\(2\)</span> ice creams today, should we blame the holiday or the fact that it was freezing cold at <span class="math inline">\(0\)</span>&nbsp;°C? Probably the second explanation. Therefore, let’s fix this.</p>
+<p>Let’s re-express <span class="math inline">\(x_1\)</span> as the deviation from a baseline temperature, say <span class="math inline">\(18\)</span>&nbsp;°C: <span class="math inline">\(x_{\text{new}} = x_1 - 18\)</span>. We can do this without changing the model and therefore the prediction: <span class="math display">\[m(\vec{x}) = 10 \cdot x_1 + 2 \cdot x_2 = 10 \cdot (x_{\text{new}} + 18) + 2 \cdot x_2 = 10 \cdot x_{\text{new}} + 2 \cdot x_2 + 180\]</span> Now, if we explain our previous unsuccessful business day, we start with the temperature. The temperature has the most negative relevance for this day, <span class="math inline">\(10 \cdot (-18) = -180\)</span>, and only the holiday has a positive relevance of <span class="math inline">\(2\)</span>. The bias absorbs <span class="math inline">\(180\)</span> relevance, so we again have a total relevance of <span class="math inline">\(180 + 2 -180 = 2\)</span>. Much better. <a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
+<p>This conclusion might seem trivial if you think about it, but we can reduce many “problems” of LRP to an implicit zero baseline that went unquestioned.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>I call the “implicit zero baseline” the main Achilles’ heel of LRP. But actually, there is an even larger conceptual assumption. What if we have non-linear input features? Is LRP of any use here? Why or why not?</p>
+</div>
+</div>
+<p>This model can illustrate even more subtleties of LRP and its semantics.</p>
+<p>For example, think about what happens in a shared household. You earned 100 euros this month, but your partner spent 99 euros. The total income this month will be <span class="math inline">\(100 + (-99) = 1\)</span>, but the relevances attributed to both of you are much higher in magnitude: you will get an attribution of +100; your partner will get -99. We follow all LRP rules; conservation holds. But the results seem weird. Why?</p>
+<div class="page-columns page-full"><p>This is the so-called <strong>relevance cancellation</strong>: large positive and negative relevances that mostly offset each other, leaving a small total. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">Relevance cancellation becomes a larger issue in deeper networks, where small intermediate relevances might suddenly grow into large cancellation terms.</span></div></div>
+</section>
+<section id="local-sensitivity" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="local-sensitivity">Local Sensitivity</h2>
+<div class="page-columns page-full"><p>Now that we understand LRP, let’s try to understand it on a deeper level. To do so, we will look at it in relation to a seemingly different attribution method, which you might be much more familiar with: <strong>gradients</strong>. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">This exact usage actually has a name, <em>vanilla gradient</em>, introduced by <span class="citation" data-cites="baehrens2010explain">Baehrens et al. (<a href="#ref-baehrens2010explain" role="doc-biblioref">2010</a>)</span> and popularised by <span class="citation" data-cites="simonyan2014deep">Simonyan et al. (<a href="#ref-simonyan2014deep" role="doc-biblioref">2014</a>)</span>. It is implicitly used by mechanistic interpretability in attribution patching <span class="citation" data-cites="nanda2023attributionpatching">(<a href="#ref-nanda2023attributionpatching" role="doc-biblioref">Nanda 2023</a>)</span>.</span></div></div>
+<p>Gradients are a classical academic interpretability method, more widely known in the AI safety space and even easier to understand for most ML practitioners. Most famously, we use gradients to optimise neural networks and transformers. Unlike in training via gradient descent, we will not compute gradients here with respect to the trainable weights, but with respect to the input variables.</p>
+<p>To warm up, let’s get back to our movie night cost <span class="math inline">\(m(\vec{x})\)</span>, our input features, the number of tickets <span class="math inline">\(x_1\)</span> and the number of bags of popcorn <span class="math inline">\(x_2\)</span> bought, and the prediction model <span class="math inline">\(m(\vec{x}) = w_1 x_1 + w_2 x_2\)</span> based on our model weights <span class="math inline">\(w_1, w_2\)</span>.</p>
+<p>A <strong>derivative</strong> describes the rate of change of the output with respect to one input variable: if we nudge that input, how does the output move? For a function of several variables we compute a <strong>partial derivative</strong> per variable, and the gradient is just all of them collected together. The part worth holding on to is that a derivative is always evaluated at a specific, complete input. There is no gradient “of a function” in the abstract, only a gradient at a point.</p>
+<p>Our movie night cost example hides this nicely. The derivative with respect to the number of tickets <span class="math inline">\(x_1\)</span> is just the weight <span class="math inline">\(w_1\)</span>, whatever <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span> happen to be. Here the evaluation point doesn’t matter, but that’s a property of linear models, not of derivatives.</p>
+<p>A still useful description of this number is that it describes what would happen if we changed the input <span class="math inline">\(x_1\)</span> by an infinitesimally small amount <span class="math inline">\(\Delta x_1\)</span>: the output would change by <span class="math inline">\(\Delta x_1 \cdot w_1\)</span>. As you might realise, in this linear case this is in fact exactly correct.</p>
+<p>But does this number help us in terms of explanations? So, given an input, we now receive the gradient, which is the collection of derivatives with respect to all input features. What do we learn? We get a kind of <strong>local sensitivity</strong>.</p>
+<p>The explanation does not explain how we got here. It tells you that if you changed an input feature by a bit, it would change the output either positively or negatively, a lot or not at all. <em>The sensitivity is itself a description of what happens for an “infinitesimally” small change</em>.</p>
+<p>So a real change bigger than “infinitesimally small” might actually change the output in a different way, though the approximation is often still helpful.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></p>
+<p>So when is local sensitivity not helpful? When we want to explain how an output came to be. Because an output was not caused by an “infinitesimally” small change to one input, but probably by a large change in a set of inputs. This is where the model breaks. It might be a good explanation for models that are more globally linear, but then the model itself is already easy to understand without this additional tool.</p>
+</section>
+<section id="integrated-local-sensitivity-is-relevance" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="integrated-local-sensitivity-is-relevance">Integrated Local Sensitivity Is Relevance</h2>
+<p>What is more interesting here is how local sensitivity connects to relevance. Relevance most often provides the more intuitive answer to a request for an explanation: “whose fault is this?” rather than “what would happen if one thing changed a tiny bit?” But one crucial annoyance of LRP is notably absent in local sensitivity: we make no assumption about a zero baseline.</p>
+<p>This is the nice thing about the notion of “local sensitivity”: it works truly without a baseline. This will become even more obvious if we try to connect this notion of “local sensitivity” to our relevance built on a baseline.</p>
+<p>So, if local sensitivity describes the sensitivity of individual features at a specific input, relevance is an approximate integral of local sensitivity between two points: the zero baseline <span class="math inline">\(\vec{x} = \vec{0}\)</span> (with output <span class="math inline">\(m(\vec{0})\)</span>), and the actual input <span class="math inline">\(\vec{x}\)</span>. Previously, we asked how a tiny change at a point <span class="math inline">\(\vec{x}\)</span> to a variable <span class="math inline">\(x_1\)</span> would change our output <span class="math inline">\(m(\vec{x})\)</span>; now we ask: how much did moving <span class="math inline">\(x_1\)</span> from <span class="math inline">\(0\)</span> to its actual value change the output <span class="math inline">\(m(\vec{x})\)</span>?</p>
+<div class="page-columns page-full"><p>The correct, exact method to compute this would be to compute gradients for many intermediate inputs (actually infinitely many) between the zero baseline and the input, which we can use to derive the real integral of the rate of change. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">By the way, this thought experiment is itself a real method, named “Integrated Gradients” <span class="citation" data-cites="sundararajan2017axiomatic">(<a href="#ref-sundararajan2017axiomatic" role="doc-biblioref">Sundararajan et al. 2017</a>)</span>.</span></div></div>
+<p>Instead, we do what I warned against before: “we use our local sensitivity as an approximation for global behaviour”. And this is exactly the reason why we often hear that LRP is just gradient × input in many simple cases <span class="citation" data-cites="shrikumar2016notjust">(<a href="#ref-shrikumar2016notjust" role="doc-biblioref">Shrikumar et al. 2016</a>)</span>, because it is. We assume the local sensitivities (i.e., the gradient) of each input apply globally; therefore, the relevance of each input has to be local sensitivity times input.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
+<div class="page-columns page-full"><p>The more subtle assumption is the zero baseline. But it follows from how we distribute relevance to features. As you may remember, we distributed relevances based on the contribution of the feature to the output. By definition, a feature that contributed <span class="math inline">\(0\)</span> will get zero relevance, no matter how much total relevance we distribute. This is where we introduced this zero baseline. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">Attribution patching <span class="citation" data-cites="nanda2023attributionpatching">(<a href="#ref-nanda2023attributionpatching" role="doc-biblioref">Nanda 2023</a>)</span> is an example of a method that uses “relevances with a non-zero baseline”.</span></div></div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Some readers might complain now about the relevances we attributed to the bias: how can a bias have any relevance if we assume a zero baseline? Biases always contribute the same value, so by definition they also contribute that value at the zero baseline. Yeah, this is one caveat of LRP in this form: we extend the zero baseline assumption also to the bias and pretend it contributes <span class="math inline">\(0\)</span> to the output at the zero baseline.</p>
+</div>
+</div>
+<p>The cleverness of LRP starts in cases where we realise that we can <em>approximate local sensitivity with better assumptions that better match the exact model</em>. This is where our initial toy model stops being useful. Even though we could use it to explain the semantics of LRP and some of its challenges, we cannot explain what LRP sometimes does “smarter” to improve upon its assumptions. Therefore, we need a scenario where our assumptions are obviously broken and where we might find a better solution.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>These improvements that LRP applies are why some people claim that LRP is more faithful than plain gradients <span class="citation" data-cites="rezaeijafari2025relp">(<a href="#ref-rezaeijafari2025relp" role="doc-biblioref">Rezaei Jafari et al. 2025</a>)</span>, though this depends on the choice of rules <span class="citation" data-cites="sixt2020explanations">(<a href="#ref-sixt2020explanations" role="doc-biblioref">Sixt et al. 2020</a>)</span>. To connect these LRP rules back to plain gradients and local sensitivity computation: nothing stops us from applying the same custom LRP rules for computing a local sensitivity too. We typically use them to compute relevances, and we design them for this purpose. But conceptually, you can repurpose many of these rules to compute a kind of “local sensitivity”.</p>
+</div>
+</div>
+</section>
+<section id="bonus-bilinear-is-annoying" class="level2">
+<h2 class="anchored" data-anchor-id="bonus-bilinear-is-annoying">Bonus: Bilinear Is Annoying</h2>
+<p>Now, we could talk about many LRP rules, and what they fix and solve. Some of them solve more general issues of relevance semantics: LRP-epsilon, for example, addresses the relevance explosion in deep neural networks caused by relevance cancellation (see the shared household example above). Others adapt to domain-specific assumptions about inputs, such as the <span class="math inline">\(z^B\)</span> rule.</p>
+<p>But I want to talk about a different issue in this last section, about the most annoying case that occurs in transformers: bilinearity.</p>
+<p>What’s wrong with a model with the inputs <span class="math inline">\(x_1, x_2\)</span> that we describe as <span class="math inline">\(m(\vec{x}) = x_1 x_2\)</span>?</p>
+<p>Let’s start by computing the partial derivative of <span class="math inline">\(m(\vec{x})\)</span> with respect to <span class="math inline">\(x_1\)</span> at input <span class="math inline">\(\vec{x} = (x_1, x_2)\)</span>. This time, the derivative is not independent of the input <span class="math inline">\(\vec{x}\)</span>; it is <span class="math inline">\(x_2\)</span>, as you might have guessed. Symmetrically, the partial derivative of <span class="math inline">\(m(\vec{x})\)</span> with respect to <span class="math inline">\(x_2\)</span> at <span class="math inline">\(\vec{x}\)</span> is <span class="math inline">\(x_1\)</span>. As we have learned so far, relevance is just gradient × input, so we know the relevance is just <span class="math inline">\(x_1 x_2\)</span> for both inputs… wait, our total relevance has to sum to <span class="math inline">\(x_1 x_2\)</span> as this is our output, but both inputs already have a relevance of <span class="math inline">\(x_1 x_2\)</span> each. So the relevances are clearly wrong. We cannot just apply our known rules to this bilinear example.</p>
+<p>The most mathematically sound idea is to integrate along the straight path from the zero baseline to our input, instead of pretending the gradient is constant. We write that path as <span class="math inline">\(\vec{x}(\alpha) = (\alpha x_1, \alpha x_2)\)</span>, where <span class="math inline">\(\alpha\)</span> runs from <span class="math inline">\(0\)</span> (the baseline) to <span class="math inline">\(1\)</span> (our actual input), and integrate each feature’s local sensitivity along it: <span class="math display">\[R_1 = \int_0^1 (\alpha x_2) \cdot x_1 \, d\alpha = \frac{x_1 x_2}{2}, \qquad R_2 = \int_0^1 (\alpha x_1) \cdot x_2 \, d\alpha = \frac{x_1 x_2}{2}\]</span> Note that we integrate over <span class="math inline">\(\alpha\)</span>, not over <span class="math inline">\(x_1\)</span>: the two inputs travel from baseline to input together, and that is exactly what splits the product in half. Both features get half the output, conservation holds, and the symmetry matches our intuition that neither factor is more to blame than the other. But what are good local rules to approximate this result?</p>
+<p>There isn’t actually a clear answer, but there are a few that are more or less helpful :) <span class="citation" data-cites="ali2022xai achtibat2024attnlrp eberle2022bilrp">(<a href="#ref-ali2022xai" role="doc-biblioref">Ali et al. 2022</a>; <a href="#ref-achtibat2024attnlrp" role="doc-biblioref">Achtibat et al. 2024</a>; <a href="#ref-eberle2022bilrp" role="doc-biblioref">Eberle et al. 2022</a>)</span></p>
+</section>
+<section id="further-material" class="level2">
+<h2 class="anchored" data-anchor-id="further-material">Further Material</h2>
+<p>I didn’t cover much of the content of LRP. I mean, I never even showed you the classical LRP formula :D But I believe this mental model is enough to either understand LRP and its relationship with gradients better, or to serve as the perfect starting point to dig deeper into how we compute LRP in deeper networks, which rules we implement and how we deal with fun edge cases.</p>
+<p>If you want to dive deeper, I recommend starting with <a href="https://www.youtube.com/watch?v=b26IZ2aYGjU">this video</a>, which mainly introduces the actual layer-wise implementation of LRP (something we entirely ignored in this article). A more comprehensive and traditional introduction is the book chapter <a href="https://iphome.hhi.de/samek/pdf/MonXAI19.pdf">“Layer-Wise Relevance Propagation: An Overview”</a> <span class="citation" data-cites="montavon2019lrpoverview">(<a href="#ref-montavon2019lrpoverview" role="doc-biblioref">Montavon et al. 2019</a>)</span>. You can find a practical application of LRP to the Othello toy model in <a href="https://yp-edu.github.io/articles/layer-wise-relevance-propagation">this article</a>.</p>
+<p>If you wonder how someone might apply LRP to a transformer, I would refer you to the AttnLRP paper <span class="citation" data-cites="achtibat2024attnlrp">(<a href="#ref-achtibat2024attnlrp" role="doc-biblioref">Achtibat et al. 2024</a>)</span>.</p>
+<p>And once you’re comfortable with LRP, I recommend reading <span class="citation" data-cites="blank2026rlens">Blank et al. (<a href="#ref-blank2026rlens" role="doc-biblioref">2026</a>)</span> and <span class="citation" data-cites="rezaeijafari2025relp">Rezaei Jafari et al. (<a href="#ref-rezaeijafari2025relp" role="doc-biblioref">2025</a>)</span>. Neither method directly computes typical relevances, but both use LRP rules within gradient-based methods. So, they are perfect examples of how LRP might motivate new techniques.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-achtibat2024attnlrp" class="csl-entry" role="listitem">
+Achtibat, Reduan, Sayed Mohammad Vakilzadeh Hatefi, Maximilian Dreyer, et al. 2024. <span>“<span>AttnLRP</span>: Attention-Aware Layer-Wise Relevance Propagation for Transformers.”</span> <em>Proceedings of the 41st International Conference on Machine Learning</em>, Proceedings of machine learning research, vol. 235. <a href="https://arxiv.org/abs/2402.05602">https://arxiv.org/abs/2402.05602</a>.
+</div>
+<div id="ref-ali2022xai" class="csl-entry" role="listitem">
+Ali, Ameen, Thomas Schnake, Oliver Eberle, Grégoire Montavon, Klaus-Robert Müller, and Lior Wolf. 2022. <span>“<span>XAI</span> for Transformers: Better Explanations Through Conservative Propagation.”</span> <em>Proceedings of the 39th International Conference on Machine Learning</em>, Proceedings of machine learning research, vol. 162: 435–51. <a href="https://arxiv.org/abs/2202.07304">https://arxiv.org/abs/2202.07304</a>.
+</div>
+<div id="ref-anthropic2026globalworkspace" class="csl-entry" role="listitem">
+Anthropic. 2026. <span>“A Global Workspace in Language Models.”</span> <a href="https://www.anthropic.com/research/global-workspace">https://www.anthropic.com/research/global-workspace</a>.
+</div>
+<div id="ref-bach2015lrp" class="csl-entry" role="listitem">
+Bach, Sebastian, Alexander Binder, Grégoire Montavon, Frederick Klauschen, Klaus-Robert Müller, and Wojciech Samek. 2015. <span>“On Pixel-Wise Explanations for Non-Linear Classifier Decisions by Layer-Wise Relevance Propagation.”</span> <em>PLOS ONE</em> 10 (7): e0130140. <a href="https://doi.org/10.1371/journal.pone.0130140">https://doi.org/10.1371/journal.pone.0130140</a>.
+</div>
+<div id="ref-baehrens2010explain" class="csl-entry" role="listitem">
+Baehrens, David, Timon Schroeter, Stefan Harmeling, Motoaki Kawanabe, Katja Hansen, and Klaus-Robert Müller. 2010. <span>“How to Explain Individual Classification Decisions.”</span> <em>Journal of Machine Learning Research</em> 11: 1803–31. <a href="https://jmlr.org/papers/v11/baehrens10a.html">https://jmlr.org/papers/v11/baehrens10a.html</a>.
+</div>
+<div id="ref-blank2026rlens" class="csl-entry" role="listitem">
+Blank, Camila, Agam Bhatia, and Neel Nanda. 2026. <span>“<span class="nocase">R-lens</span>: Making <span class="nocase">J-lens</span> More Faithful on Early Layers.”</span> LessWrong / AI Alignment Forum, August 5. <a href="https://www.lesswrong.com/posts/nv8oedrnLXKRzNEL9/r-lens-making-j-lens-more-faithful-on-early-layers">https://www.lesswrong.com/posts/nv8oedrnLXKRzNEL9/r-lens-making-j-lens-more-faithful-on-early-layers</a>.
+</div>
+<div id="ref-eberle2022bilrp" class="csl-entry" role="listitem">
+Eberle, Oliver, Jochen Büttner, Florian Kräutli, Klaus-Robert Müller, Matteo Valleriani, and Grégoire Montavon. 2022. <span>“Building and Interpreting Deep Similarity Models.”</span> <em>IEEE Transactions on Pattern Analysis and Machine Intelligence</em> 44 (3): 1149–61. <a href="https://doi.org/10.1109/TPAMI.2020.3020738">https://doi.org/10.1109/TPAMI.2020.3020738</a>.
+</div>
+<div id="ref-erhan2009visualizing" class="csl-entry" role="listitem">
+Erhan, Dumitru, Yoshua Bengio, Aaron Courville, and Pascal Vincent. 2009. <em>Visualizing Higher-Layer Features of a Deep Network</em>. No. 1341. Universit<span>é</span> de Montr<span>é</span>al. <a href="https://www.semanticscholar.org/paper/Visualizing-Higher-Layer-Features-of-a-Deep-Network-Erhan-Bengio/65d994fb778a8d9e0f632659fb33a082949a50d3">https://www.semanticscholar.org/paper/Visualizing-Higher-Layer-Features-of-a-Deep-Network-Erhan-Bengio/65d994fb778a8d9e0f632659fb33a082949a50d3</a>.
+</div>
+<div id="ref-kindermans2017unreliability" class="csl-entry" role="listitem">
+Kindermans, Pieter-Jan, Sara Hooker, Julius Adebayo, et al. 2017. <span>“The (Un)reliability of Saliency Methods.”</span> <em>arXiv Preprint arXiv:1711.00867</em>. <a href="https://arxiv.org/abs/1711.00867">https://arxiv.org/abs/1711.00867</a>.
+</div>
+<div id="ref-montavon2019lrpoverview" class="csl-entry" role="listitem">
+Montavon, Grégoire, Alexander Binder, Sebastian Lapuschkin, Wojciech Samek, and Klaus-Robert Müller. 2019. <span>“Layer-Wise Relevance Propagation: An Overview.”</span> In <em>Explainable <span>AI</span>: Interpreting, Explaining and Visualizing Deep Learning</em>, edited by Wojciech Samek, Grégoire Montavon, Andrea Vedaldi, Lars Kai Hansen, and Klaus-Robert Müller, vol. 11700. Lecture Notes in Computer Science. Springer. <a href="https://doi.org/10.1007/978-3-030-28954-6_10">https://doi.org/10.1007/978-3-030-28954-6_10</a>.
+</div>
+<div id="ref-nanda2023attributionpatching" class="csl-entry" role="listitem">
+Nanda, Neel. 2023. <span>“Attribution Patching: Activation Patching at Industrial Scale.”</span> <a href="https://www.neelnanda.io/mechanistic-interpretability/attribution-patching">https://www.neelnanda.io/mechanistic-interpretability/attribution-patching</a>.
+</div>
+<div id="ref-rezaeijafari2025relp" class="csl-entry" role="listitem">
+Rezaei Jafari, Farnoush, Oliver Eberle, Ashkan Khakzar, and Neel Nanda. 2025. <span>“<span>RelP</span>: Faithful and Efficient Circuit Discovery in Language Models via Relevance Patching.”</span> <em>arXiv Preprint arXiv:2508.21258</em>. <a href="https://arxiv.org/abs/2508.21258">https://arxiv.org/abs/2508.21258</a>.
+</div>
+<div id="ref-shrikumar2016notjust" class="csl-entry" role="listitem">
+Shrikumar, Avanti, Peyton Greenside, Anna Shcherbina, and Anshul Kundaje. 2016. <span>“Not Just a Black Box: Learning Important Features Through Propagating Activation Differences.”</span> <em>arXiv Preprint arXiv:1605.01713</em>. <a href="https://arxiv.org/abs/1605.01713">https://arxiv.org/abs/1605.01713</a>.
+</div>
+<div id="ref-simonyan2014deep" class="csl-entry" role="listitem">
+Simonyan, Karen, Andrea Vedaldi, and Andrew Zisserman. 2014. <span>“Deep Inside Convolutional Networks: Visualising Image Classification Models and Saliency Maps.”</span> <em>International Conference on Learning Representations (ICLR) Workshop</em>. <a href="https://arxiv.org/abs/1312.6034">https://arxiv.org/abs/1312.6034</a>.
+</div>
+<div id="ref-sixt2020explanations" class="csl-entry" role="listitem">
+Sixt, Leon, Maximilian Granz, and Tim Landgraf. 2020. <span>“When Explanations Lie: Why Many Modified <span>BP</span> Attributions Fail.”</span> <em>Proceedings of the 37th International Conference on Machine Learning</em>, Proceedings of machine learning research, vol. 119: 9046–57. <a href="https://arxiv.org/abs/1912.09818">https://arxiv.org/abs/1912.09818</a>.
+</div>
+<div id="ref-sundararajan2017axiomatic" class="csl-entry" role="listitem">
+Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. 2017. <span>“Axiomatic Attribution for Deep Networks.”</span> <em>Proceedings of the 34th International Conference on Machine Learning</em>, Proceedings of machine learning research, vol. 70: 3319–28. <a href="https://arxiv.org/abs/1703.01365">https://arxiv.org/abs/1703.01365</a>.
+</div>
+<div id="ref-zeiler2014visualizing" class="csl-entry" role="listitem">
+Zeiler, Matthew D., and Rob Fergus. 2014. <span>“Visualizing and Understanding Convolutional Networks.”</span> <em>Computer Vision – ECCV 2014</em>, 818–33. <a href="https://doi.org/10.1007/978-3-319-10590-1_53">https://doi.org/10.1007/978-3-319-10590-1_53</a>.
+</div>
+</div>
+
+
+</section>
+
+
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>I know, this article never explains the “layer” part of the name. For that, I point to material at the end. But I believe the intuition behind what this score means is much more important than how to compute it.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Mechanistic interpretability researchers tend to refer to latent features or intermediate activations as just “features”. The word “feature” in feature attribution typically refers to input features, but you can use LRP to attribute to latent features as well.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>The interpretation of the bias relevance is often a bit less clear. In this case, we would just say that by default (<span class="math inline">\(18\)</span>&nbsp;°C, no holiday) we already expect <span class="math inline">\(180\)</span> sales, which we attribute to the bias term.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>Until it isn’t.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>Framing LRP as a kind of approximate integration to a zero baseline is a rather unconventional framing, but helpful, I believe. The more conventional lens through which to look at LRP is to view it as a kind of “deep Taylor decomposition”.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/hubertjan\.de");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

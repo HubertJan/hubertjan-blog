@@ -5,54 +5,220 @@
       xmlns:dc="http://purl.org/dc/elements/1.1/" 
       version="2.0">
 <channel>
-<title>hubertjan-blog</title>
-<link>https://your-website-url.example.com/</link>
-<atom:link href="https://your-website-url.example.com/index.xml" rel="self" type="application/rss+xml"/>
-<description>A blog built with Quarto</description>
-<generator>quarto-1.9.38</generator>
-<lastBuildDate>Tue, 30 Jun 2026 22:00:00 GMT</lastBuildDate>
+<title>Hubert Tomaszczak</title>
+<link>https://hubertjan.de/</link>
+<atom:link href="https://hubertjan.de/index.xml" rel="self" type="application/rss+xml"/>
+<description>Personal page of Hubert Tomaszczak — machine learning security research at Fraunhofer HHI.</description>
+<generator>quarto-1.10.18</generator>
+<lastBuildDate>Mon, 14 Sep 2026 22:00:00 GMT</lastBuildDate>
 <item>
-  <title>Post With Code</title>
-  <dc:creator>Harlow Malloc</dc:creator>
-  <link>https://your-website-url.example.com/posts/post-with-code/</link>
+  <title>A missing lecture in mechanistic interpretability: Feature Attribution and LRP</title>
+  <dc:creator>Hubert Tomaszczak</dc:creator>
+  <link>https://hubertjan.de/posts/lrp-intuition/</link>
   <description><![CDATA[ 
 
 
 
 
 
-<p>This is a post with executable code.</p>
+<div class="page-columns page-full"><p>ML interpretability research has a funny divide. Mechanistic interpretability is the name of a field originated largely by non-traditional researchers, ranging from <a href="https://transformer-circuits.pub/">industry researchers at Anthropic</a> to <a href="https://bluedot.org/grants/rapid">independent BlueDot-grant researchers</a> to <a href="https://www.eleuther.ai/papers-blog/tag/Mechanistic+Interpretability">hackers working on fun projects in their free time on Discord</a>. Meanwhile, it is not hard to find the corresponding academic field of “interpretability”, with PhDs, professors and graduate students working on interpretability methods for ML models for over a decade already <span class="citation" data-cites="erhan2009visualizing zeiler2014visualizing">(Erhan et al. 2009; Zeiler and Fergus 2014)</span>. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">To find out more about academic interpretability, an accessible introduction to a subset of this field is the <a href="https://christophm.github.io/interpretable-ml-book/interpretability.html">Interpretable Machine Learning book</a>.</span></div></div>
+<p>Today, I am not closing this gap entirely. But I want to talk about a method developed not by mechanistic interpretability people, but by academia, and which found its way over to classic mechanistic interpretability in subtle ways.</p>
+<p>I want to talk about <strong>“Layer-wise Relevance Propagation”</strong> (<strong>LRP</strong>)<sup>1</sup> <span class="citation" data-cites="bach2015lrp">(Bach et al. 2015)</span>, and how it relates to a more familiar tool, gradients. LRP is a so-called <strong>feature attribution</strong> method, so it attributes an output to the input features<sup>2</sup> that were “responsible” for it.</p>
+<p>Learning about LRP is, I believe, useful when you want to better understand fairly common mechanistic interpretability tools like “attribution patching” <span class="citation" data-cites="nanda2023attributionpatching">(Nanda 2023)</span>, or the fancy new method “J-Lens” <span class="citation" data-cites="anthropic2026globalworkspace">(Anthropic 2026)</span>. You will understand LRP intuitively, see where it is easily misunderstood, how it relates to gradients, and roughly what problems the various “LRP rules” try to solve.</p>
+<section id="share-of-model" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="share-of-model">“Share of” Model</h2>
+<p>Before introducing any more complicated rules, semantics or terminology, we can explain the intuition behind LRP fairly simply. By doing that, we can already see many of its later challenges.</p>
+<p>Below, we show how LRP decides what inputs were relevant for a given output.</p>
+<p>Let’s start by looking at a simple linear regression model. We predict the cost of a movie night <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)"> from the number of tickets <img src="https://latex.codecogs.com/png.latex?x_1"> and the number of bags of popcorn bought <img src="https://latex.codecogs.com/png.latex?x_2">. To predict this, we learned two parameters <img src="https://latex.codecogs.com/png.latex?w_1=10"> and <img src="https://latex.codecogs.com/png.latex?w_2=5">. Our example model is: <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)%20=%20w_1%20x_1%20+%20w_2%20x_2">.</p>
+<p>This model works, but we don’t stop here. We want to know why our movie night was so expensive!</p>
+<p>Fairly easy to tell in this case. Let’s say our movie night cost <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)"> prediction is <img src="https://latex.codecogs.com/png.latex?25"> dollars. As we bought two tickets and one bag of popcorn, we attribute <img src="https://latex.codecogs.com/png.latex?2%20%5Ccdot%2010%20=%2020"> to the bought tickets and we attribute <img src="https://latex.codecogs.com/png.latex?5"> to the popcorn.</p>
+<p>And guess what, this is LRP!</p>
+<p>In LRP, we would say our number of tickets feature has a <strong>relevance</strong> of <img src="https://latex.codecogs.com/png.latex?20"> and our number of bags of popcorn has a relevance of <img src="https://latex.codecogs.com/png.latex?5">, while we have a <strong>total relevance</strong> of <img src="https://latex.codecogs.com/png.latex?25">. Here we also directly meet a defining principle of LRP. The so-called “<strong>relevance conservation</strong>”:</p>
+<blockquote class="blockquote">
+<p>All relevances attributed to our features sum to the total relevance we want to explain.</p>
+</blockquote>
+<div class="page-columns page-full"><p>One caveat to add (there will be a lot more later on, but this will help us with the next example): what do we do with a bias? Simple enough, we also assign relevance to it. So if our model is <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)%20=%20w_1%20x_1%20+%20w_2%20x_2%20+%20b">, we just attribute the total relevance <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)"> to <img src="https://latex.codecogs.com/png.latex?x_1">, <img src="https://latex.codecogs.com/png.latex?x_2"> and <img src="https://latex.codecogs.com/png.latex?b"> by their share. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">Examples like this show that relevance conservation is in many applications much more a principle than an actual property of LRP.</span></div></div>
+</section>
+<section id="invisible-baseline" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="invisible-baseline">Invisible Baseline</h2>
+<p>Although the model seems simple, it already helps a lot to explain various well-known problems.</p>
+<p>For example, let’s try to explain our number of ice creams sold <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)"> by using the temperature <img src="https://latex.codecogs.com/png.latex?x_1"> and a binary variable for whether it is a holiday: <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)%20=%2010%20%5Ccdot%20x_1%20+%202%20%5Ccdot%20x_2">. We know our model is accurate in realistic number ranges. For example, we cannot predict the number of ice creams sold at <img src="https://latex.codecogs.com/png.latex?100">&nbsp;°C, as this would be quite unrealistic (at least for now).</p>
+<p>Now let’s try to find out why we only sold 2 ice creams! It was <img src="https://latex.codecogs.com/png.latex?0">&nbsp;°C, hence <img src="https://latex.codecogs.com/png.latex?10%20%5Ccdot%200%20=%200">, so the temperature was irrelevant for the prediction. It was also a holiday, hence <img src="https://latex.codecogs.com/png.latex?2%20%5Ccdot%201%20=%202">. So, we attribute our result fully to the fact that it was a holiday.</p>
+<p>But wait, intuitively, wasn’t the fact that the temperature was so low much more relevant? Yeah, it was, so what happened?</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>It might seem weird to suddenly have a binary variable in our model. But actually, this is completely fine and breaks nothing about the relevances that we computed so far. It only really limits the maximum relevances this binary input might achieve.</p>
+</div>
+</div>
+<p><span class="citation" data-cites="kindermans2017unreliability">Kindermans et al. (2017)</span> popularised this phenomenon. If we attribute a result to features based on their contributions, we have to be extremely careful about our implicit zero baseline.</p>
+<p>Our attribution technique, so simple a moment ago, suddenly falls apart for this temperature feature, as the choice of °C as an input feature assumes that <img src="https://latex.codecogs.com/png.latex?0"> is the baseline. But is it really a good baseline for our explanation here?</p>
+<p>If we have to explain to our boss why we only sold <img src="https://latex.codecogs.com/png.latex?2"> ice creams today, should we blame the holiday or the fact that it was freezing cold at <img src="https://latex.codecogs.com/png.latex?0">&nbsp;°C? Probably the second explanation. Therefore, let’s fix this.</p>
+<p>Let’s re-express <img src="https://latex.codecogs.com/png.latex?x_1"> as the deviation from a baseline temperature, say <img src="https://latex.codecogs.com/png.latex?18">&nbsp;°C: <img src="https://latex.codecogs.com/png.latex?x_%7B%5Ctext%7Bnew%7D%7D%20=%20x_1%20-%2018">. We can do this without changing the model and therefore the prediction: <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)%20=%2010%20%5Ccdot%20x_1%20+%202%20%5Ccdot%20x_2%20=%2010%20%5Ccdot%20(x_%7B%5Ctext%7Bnew%7D%7D%20+%2018)%20+%202%20%5Ccdot%20x_2%20=%2010%20%5Ccdot%20x_%7B%5Ctext%7Bnew%7D%7D%20+%202%20%5Ccdot%20x_2%20+%20180"> Now, if we explain our previous unsuccessful business day, we start with the temperature. The temperature has the most negative relevance for this day, <img src="https://latex.codecogs.com/png.latex?10%20%5Ccdot%20(-18)%20=%20-180">, and only the holiday has a positive relevance of <img src="https://latex.codecogs.com/png.latex?2">. The bias absorbs <img src="https://latex.codecogs.com/png.latex?180"> relevance, so we again have a total relevance of <img src="https://latex.codecogs.com/png.latex?180%20+%202%20-180%20=%202">. Much better. <sup>3</sup></p>
+<p>This conclusion might seem trivial if you think about it, but we can reduce many “problems” of LRP to an implicit zero baseline that went unquestioned.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>I call the “implicit zero baseline” the main Achilles’ heel of LRP. But actually, there is an even larger conceptual assumption. What if we have non-linear input features? Is LRP of any use here? Why or why not?</p>
+</div>
+</div>
+<p>This model can illustrate even more subtleties of LRP and its semantics.</p>
+<p>For example, think about what happens in a shared household. You earned 100 euros this month, but your partner spent 99 euros. The total income this month will be <img src="https://latex.codecogs.com/png.latex?100%20+%20(-99)%20=%201">, but the relevances attributed to both of you are much higher in magnitude: you will get an attribution of +100; your partner will get -99. We follow all LRP rules; conservation holds. But the results seem weird. Why?</p>
+<div class="page-columns page-full"><p>This is the so-called <strong>relevance cancellation</strong>: large positive and negative relevances that mostly offset each other, leaving a small total. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">Relevance cancellation becomes a larger issue in deeper networks, where small intermediate relevances might suddenly grow into large cancellation terms.</span></div></div>
+</section>
+<section id="local-sensitivity" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="local-sensitivity">Local Sensitivity</h2>
+<div class="page-columns page-full"><p>Now that we understand LRP, let’s try to understand it on a deeper level. To do so, we will look at it in relation to a seemingly different attribution method, which you might be much more familiar with: <strong>gradients</strong>. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">This exact usage actually has a name, <em>vanilla gradient</em>, introduced by <span class="citation" data-cites="baehrens2010explain">Baehrens et al. (2010)</span> and popularised by <span class="citation" data-cites="simonyan2014deep">Simonyan et al. (2014)</span>. It is implicitly used by mechanistic interpretability in attribution patching <span class="citation" data-cites="nanda2023attributionpatching">(Nanda 2023)</span>.</span></div></div>
+<p>Gradients are a classical academic interpretability method, more widely known in the AI safety space and even easier to understand for most ML practitioners. Most famously, we use gradients to optimise neural networks and transformers. Unlike in training via gradient descent, we will not compute gradients here with respect to the trainable weights, but with respect to the input variables.</p>
+<p>To warm up, let’s get back to our movie night cost <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)">, our input features, the number of tickets <img src="https://latex.codecogs.com/png.latex?x_1"> and the number of bags of popcorn <img src="https://latex.codecogs.com/png.latex?x_2"> bought, and the prediction model <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)%20=%20w_1%20x_1%20+%20w_2%20x_2"> based on our model weights <img src="https://latex.codecogs.com/png.latex?w_1,%20w_2">.</p>
+<p>A <strong>derivative</strong> describes the rate of change of the output with respect to one input variable: if we nudge that input, how does the output move? For a function of several variables we compute a <strong>partial derivative</strong> per variable, and the gradient is just all of them collected together. The part worth holding on to is that a derivative is always evaluated at a specific, complete input. There is no gradient “of a function” in the abstract, only a gradient at a point.</p>
+<p>Our movie night cost example hides this nicely. The derivative with respect to the number of tickets <img src="https://latex.codecogs.com/png.latex?x_1"> is just the weight <img src="https://latex.codecogs.com/png.latex?w_1">, whatever <img src="https://latex.codecogs.com/png.latex?x_1"> and <img src="https://latex.codecogs.com/png.latex?x_2"> happen to be. Here the evaluation point doesn’t matter, but that’s a property of linear models, not of derivatives.</p>
+<p>A still useful description of this number is that it describes what would happen if we changed the input <img src="https://latex.codecogs.com/png.latex?x_1"> by an infinitesimally small amount <img src="https://latex.codecogs.com/png.latex?%5CDelta%20x_1">: the output would change by <img src="https://latex.codecogs.com/png.latex?%5CDelta%20x_1%20%5Ccdot%20w_1">. As you might realise, in this linear case this is in fact exactly correct.</p>
+<p>But does this number help us in terms of explanations? So, given an input, we now receive the gradient, which is the collection of derivatives with respect to all input features. What do we learn? We get a kind of <strong>local sensitivity</strong>.</p>
+<p>The explanation does not explain how we got here. It tells you that if you changed an input feature by a bit, it would change the output either positively or negatively, a lot or not at all. <em>The sensitivity is itself a description of what happens for an “infinitesimally” small change</em>.</p>
+<p>So a real change bigger than “infinitesimally small” might actually change the output in a different way, though the approximation is often still helpful.<sup>4</sup></p>
+<p>So when is local sensitivity not helpful? When we want to explain how an output came to be. Because an output was not caused by an “infinitesimally” small change to one input, but probably by a large change in a set of inputs. This is where the model breaks. It might be a good explanation for models that are more globally linear, but then the model itself is already easy to understand without this additional tool.</p>
+</section>
+<section id="integrated-local-sensitivity-is-relevance" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="integrated-local-sensitivity-is-relevance">Integrated Local Sensitivity Is Relevance</h2>
+<p>What is more interesting here is how local sensitivity connects to relevance. Relevance most often provides the more intuitive answer to a request for an explanation: “whose fault is this?” rather than “what would happen if one thing changed a tiny bit?” But one crucial annoyance of LRP is notably absent in local sensitivity: we make no assumption about a zero baseline.</p>
+<p>This is the nice thing about the notion of “local sensitivity”: it works truly without a baseline. This will become even more obvious if we try to connect this notion of “local sensitivity” to our relevance built on a baseline.</p>
+<p>So, if local sensitivity describes the sensitivity of individual features at a specific input, relevance is an approximate integral of local sensitivity between two points: the zero baseline <img src="https://latex.codecogs.com/png.latex?%5Cvec%7Bx%7D%20=%20%5Cvec%7B0%7D"> (with output <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7B0%7D)">), and the actual input <img src="https://latex.codecogs.com/png.latex?%5Cvec%7Bx%7D">. Previously, we asked how a tiny change at a point <img src="https://latex.codecogs.com/png.latex?%5Cvec%7Bx%7D"> to a variable <img src="https://latex.codecogs.com/png.latex?x_1"> would change our output <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)">; now we ask: how much did moving <img src="https://latex.codecogs.com/png.latex?x_1"> from <img src="https://latex.codecogs.com/png.latex?0"> to its actual value change the output <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)">?</p>
+<div class="page-columns page-full"><p>The correct, exact method to compute this would be to compute gradients for many intermediate inputs (actually infinitely many) between the zero baseline and the input, which we can use to derive the real integral of the rate of change. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">By the way, this thought experiment is itself a real method, named “Integrated Gradients” <span class="citation" data-cites="sundararajan2017axiomatic">(Sundararajan et al. 2017)</span>.</span></div></div>
+<p>Instead, we do what I warned against before: “we use our local sensitivity as an approximation for global behaviour”. And this is exactly the reason why we often hear that LRP is just gradient × input in many simple cases <span class="citation" data-cites="shrikumar2016notjust">(Shrikumar et al. 2016)</span>, because it is. We assume the local sensitivities (i.e., the gradient) of each input apply globally; therefore, the relevance of each input has to be local sensitivity times input.<sup>5</sup></p>
+<div class="page-columns page-full"><p>The more subtle assumption is the zero baseline. But it follows from how we distribute relevance to features. As you may remember, we distributed relevances based on the contribution of the feature to the output. By definition, a feature that contributed <img src="https://latex.codecogs.com/png.latex?0"> will get zero relevance, no matter how much total relevance we distribute. This is where we introduced this zero baseline. </p><div class="no-row-height column-margin column-container"><span class="margin-aside">Attribution patching <span class="citation" data-cites="nanda2023attributionpatching">(Nanda 2023)</span> is an example of a method that uses “relevances with a non-zero baseline”.</span></div></div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Some readers might complain now about the relevances we attributed to the bias: how can a bias have any relevance if we assume a zero baseline? Biases always contribute the same value, so by definition they also contribute that value at the zero baseline. Yeah, this is one caveat of LRP in this form: we extend the zero baseline assumption also to the bias and pretend it contributes <img src="https://latex.codecogs.com/png.latex?0"> to the output at the zero baseline.</p>
+</div>
+</div>
+<p>The cleverness of LRP starts in cases where we realise that we can <em>approximate local sensitivity with better assumptions that better match the exact model</em>. This is where our initial toy model stops being useful. Even though we could use it to explain the semantics of LRP and some of its challenges, we cannot explain what LRP sometimes does “smarter” to improve upon its assumptions. Therefore, we need a scenario where our assumptions are obviously broken and where we might find a better solution.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>These improvements that LRP applies are why some people claim that LRP is more faithful than plain gradients <span class="citation" data-cites="rezaeijafari2025relp">(Rezaei Jafari et al. 2025)</span>, though this depends on the choice of rules <span class="citation" data-cites="sixt2020explanations">(Sixt et al. 2020)</span>. To connect these LRP rules back to plain gradients and local sensitivity computation: nothing stops us from applying the same custom LRP rules for computing a local sensitivity too. We typically use them to compute relevances, and we design them for this purpose. But conceptually, you can repurpose many of these rules to compute a kind of “local sensitivity”.</p>
+</div>
+</div>
+</section>
+<section id="bonus-bilinear-is-annoying" class="level2">
+<h2 class="anchored" data-anchor-id="bonus-bilinear-is-annoying">Bonus: Bilinear Is Annoying</h2>
+<p>Now, we could talk about many LRP rules, and what they fix and solve. Some of them solve more general issues of relevance semantics: LRP-epsilon, for example, addresses the relevance explosion in deep neural networks caused by relevance cancellation (see the shared household example above). Others adapt to domain-specific assumptions about inputs, such as the <img src="https://latex.codecogs.com/png.latex?z%5EB"> rule.</p>
+<p>But I want to talk about a different issue in this last section, about the most annoying case that occurs in transformers: bilinearity.</p>
+<p>What’s wrong with a model with the inputs <img src="https://latex.codecogs.com/png.latex?x_1,%20x_2"> that we describe as <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)%20=%20x_1%20x_2">?</p>
+<p>Let’s start by computing the partial derivative of <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)"> with respect to <img src="https://latex.codecogs.com/png.latex?x_1"> at input <img src="https://latex.codecogs.com/png.latex?%5Cvec%7Bx%7D%20=%20(x_1,%20x_2)">. This time, the derivative is not independent of the input <img src="https://latex.codecogs.com/png.latex?%5Cvec%7Bx%7D">; it is <img src="https://latex.codecogs.com/png.latex?x_2">, as you might have guessed. Symmetrically, the partial derivative of <img src="https://latex.codecogs.com/png.latex?m(%5Cvec%7Bx%7D)"> with respect to <img src="https://latex.codecogs.com/png.latex?x_2"> at <img src="https://latex.codecogs.com/png.latex?%5Cvec%7Bx%7D"> is <img src="https://latex.codecogs.com/png.latex?x_1">. As we have learned so far, relevance is just gradient × input, so we know the relevance is just <img src="https://latex.codecogs.com/png.latex?x_1%20x_2"> for both inputs… wait, our total relevance has to sum to <img src="https://latex.codecogs.com/png.latex?x_1%20x_2"> as this is our output, but both inputs already have a relevance of <img src="https://latex.codecogs.com/png.latex?x_1%20x_2"> each. So the relevances are clearly wrong. We cannot just apply our known rules to this bilinear example.</p>
+<p>The most mathematically sound idea is to integrate along the straight path from the zero baseline to our input, instead of pretending the gradient is constant. We write that path as <img src="https://latex.codecogs.com/png.latex?%5Cvec%7Bx%7D(%5Calpha)%20=%20(%5Calpha%20x_1,%20%5Calpha%20x_2)">, where <img src="https://latex.codecogs.com/png.latex?%5Calpha"> runs from <img src="https://latex.codecogs.com/png.latex?0"> (the baseline) to <img src="https://latex.codecogs.com/png.latex?1"> (our actual input), and integrate each feature’s local sensitivity along it: <img src="https://latex.codecogs.com/png.latex?R_1%20=%20%5Cint_0%5E1%20(%5Calpha%20x_2)%20%5Ccdot%20x_1%20%5C,%20d%5Calpha%20=%20%5Cfrac%7Bx_1%20x_2%7D%7B2%7D,%20%5Cqquad%20R_2%20=%20%5Cint_0%5E1%20(%5Calpha%20x_1)%20%5Ccdot%20x_2%20%5C,%20d%5Calpha%20=%20%5Cfrac%7Bx_1%20x_2%7D%7B2%7D"> Note that we integrate over <img src="https://latex.codecogs.com/png.latex?%5Calpha">, not over <img src="https://latex.codecogs.com/png.latex?x_1">: the two inputs travel from baseline to input together, and that is exactly what splits the product in half. Both features get half the output, conservation holds, and the symmetry matches our intuition that neither factor is more to blame than the other. But what are good local rules to approximate this result?</p>
+<p>There isn’t actually a clear answer, but there are a few that are more or less helpful :) <span class="citation" data-cites="ali2022xai achtibat2024attnlrp eberle2022bilrp">(Ali et al. 2022; Achtibat et al. 2024; Eberle et al. 2022)</span></p>
+</section>
+<section id="further-material" class="level2">
+<h2 class="anchored" data-anchor-id="further-material">Further Material</h2>
+<p>I didn’t cover much of the content of LRP. I mean, I never even showed you the classical LRP formula :D But I believe this mental model is enough to either understand LRP and its relationship with gradients better, or to serve as the perfect starting point to dig deeper into how we compute LRP in deeper networks, which rules we implement and how we deal with fun edge cases.</p>
+<p>If you want to dive deeper, I recommend starting with <a href="https://www.youtube.com/watch?v=b26IZ2aYGjU">this video</a>, which mainly introduces the actual layer-wise implementation of LRP (something we entirely ignored in this article). A more comprehensive and traditional introduction is the book chapter <a href="https://iphome.hhi.de/samek/pdf/MonXAI19.pdf">“Layer-Wise Relevance Propagation: An Overview”</a> <span class="citation" data-cites="montavon2019lrpoverview">(Montavon et al. 2019)</span>. You can find a practical application of LRP to the Othello toy model in <a href="https://yp-edu.github.io/articles/layer-wise-relevance-propagation">this article</a>.</p>
+<p>If you wonder how someone might apply LRP to a transformer, I would refer you to the AttnLRP paper <span class="citation" data-cites="achtibat2024attnlrp">(Achtibat et al. 2024)</span>.</p>
+<p>And once you’re comfortable with LRP, I recommend reading <span class="citation" data-cites="blank2026rlens">Blank et al. (2026)</span> and <span class="citation" data-cites="rezaeijafari2025relp">Rezaei Jafari et al. (2025)</span>. Neither method directly computes typical relevances, but both use LRP rules within gradient-based methods. So, they are perfect examples of how LRP might motivate new techniques.</p>
+</section>
+<section id="references" class="level2">
+<h2 class="anchored" data-anchor-id="references">References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-achtibat2024attnlrp" class="csl-entry">
+Achtibat, Reduan, Sayed Mohammad Vakilzadeh Hatefi, Maximilian Dreyer, et al. 2024. <span>“<span>AttnLRP</span>: Attention-Aware Layer-Wise Relevance Propagation for Transformers.”</span> <em>Proceedings of the 41st International Conference on Machine Learning</em>, Proceedings of machine learning research, vol. 235. <a href="https://arxiv.org/abs/2402.05602">https://arxiv.org/abs/2402.05602</a>.
+</div>
+<div id="ref-ali2022xai" class="csl-entry">
+Ali, Ameen, Thomas Schnake, Oliver Eberle, Grégoire Montavon, Klaus-Robert Müller, and Lior Wolf. 2022. <span>“<span>XAI</span> for Transformers: Better Explanations Through Conservative Propagation.”</span> <em>Proceedings of the 39th International Conference on Machine Learning</em>, Proceedings of machine learning research, vol. 162: 435–51. <a href="https://arxiv.org/abs/2202.07304">https://arxiv.org/abs/2202.07304</a>.
+</div>
+<div id="ref-anthropic2026globalworkspace" class="csl-entry">
+Anthropic. 2026. <span>“A Global Workspace in Language Models.”</span> <a href="https://www.anthropic.com/research/global-workspace">https://www.anthropic.com/research/global-workspace</a>.
+</div>
+<div id="ref-bach2015lrp" class="csl-entry">
+Bach, Sebastian, Alexander Binder, Grégoire Montavon, Frederick Klauschen, Klaus-Robert Müller, and Wojciech Samek. 2015. <span>“On Pixel-Wise Explanations for Non-Linear Classifier Decisions by Layer-Wise Relevance Propagation.”</span> <em>PLOS ONE</em> 10 (7): e0130140. <a href="https://doi.org/10.1371/journal.pone.0130140">https://doi.org/10.1371/journal.pone.0130140</a>.
+</div>
+<div id="ref-baehrens2010explain" class="csl-entry">
+Baehrens, David, Timon Schroeter, Stefan Harmeling, Motoaki Kawanabe, Katja Hansen, and Klaus-Robert Müller. 2010. <span>“How to Explain Individual Classification Decisions.”</span> <em>Journal of Machine Learning Research</em> 11: 1803–31. <a href="https://jmlr.org/papers/v11/baehrens10a.html">https://jmlr.org/papers/v11/baehrens10a.html</a>.
+</div>
+<div id="ref-blank2026rlens" class="csl-entry">
+Blank, Camila, Agam Bhatia, and Neel Nanda. 2026. <span>“<span class="nocase">R-lens</span>: Making <span class="nocase">J-lens</span> More Faithful on Early Layers.”</span> LessWrong / AI Alignment Forum, August 5. <a href="https://www.lesswrong.com/posts/nv8oedrnLXKRzNEL9/r-lens-making-j-lens-more-faithful-on-early-layers">https://www.lesswrong.com/posts/nv8oedrnLXKRzNEL9/r-lens-making-j-lens-more-faithful-on-early-layers</a>.
+</div>
+<div id="ref-eberle2022bilrp" class="csl-entry">
+Eberle, Oliver, Jochen Büttner, Florian Kräutli, Klaus-Robert Müller, Matteo Valleriani, and Grégoire Montavon. 2022. <span>“Building and Interpreting Deep Similarity Models.”</span> <em>IEEE Transactions on Pattern Analysis and Machine Intelligence</em> 44 (3): 1149–61. <a href="https://doi.org/10.1109/TPAMI.2020.3020738">https://doi.org/10.1109/TPAMI.2020.3020738</a>.
+</div>
+<div id="ref-erhan2009visualizing" class="csl-entry">
+Erhan, Dumitru, Yoshua Bengio, Aaron Courville, and Pascal Vincent. 2009. <em>Visualizing Higher-Layer Features of a Deep Network</em>. No. 1341. Universit<span>é</span> de Montr<span>é</span>al. <a href="https://www.semanticscholar.org/paper/Visualizing-Higher-Layer-Features-of-a-Deep-Network-Erhan-Bengio/65d994fb778a8d9e0f632659fb33a082949a50d3">https://www.semanticscholar.org/paper/Visualizing-Higher-Layer-Features-of-a-Deep-Network-Erhan-Bengio/65d994fb778a8d9e0f632659fb33a082949a50d3</a>.
+</div>
+<div id="ref-kindermans2017unreliability" class="csl-entry">
+Kindermans, Pieter-Jan, Sara Hooker, Julius Adebayo, et al. 2017. <span>“The (Un)reliability of Saliency Methods.”</span> <em>arXiv Preprint arXiv:1711.00867</em>. <a href="https://arxiv.org/abs/1711.00867">https://arxiv.org/abs/1711.00867</a>.
+</div>
+<div id="ref-montavon2019lrpoverview" class="csl-entry">
+Montavon, Grégoire, Alexander Binder, Sebastian Lapuschkin, Wojciech Samek, and Klaus-Robert Müller. 2019. <span>“Layer-Wise Relevance Propagation: An Overview.”</span> In <em>Explainable <span>AI</span>: Interpreting, Explaining and Visualizing Deep Learning</em>, edited by Wojciech Samek, Grégoire Montavon, Andrea Vedaldi, Lars Kai Hansen, and Klaus-Robert Müller, vol. 11700. Lecture Notes in Computer Science. Springer. <a href="https://doi.org/10.1007/978-3-030-28954-6_10">https://doi.org/10.1007/978-3-030-28954-6_10</a>.
+</div>
+<div id="ref-nanda2023attributionpatching" class="csl-entry">
+Nanda, Neel. 2023. <span>“Attribution Patching: Activation Patching at Industrial Scale.”</span> <a href="https://www.neelnanda.io/mechanistic-interpretability/attribution-patching">https://www.neelnanda.io/mechanistic-interpretability/attribution-patching</a>.
+</div>
+<div id="ref-rezaeijafari2025relp" class="csl-entry">
+Rezaei Jafari, Farnoush, Oliver Eberle, Ashkan Khakzar, and Neel Nanda. 2025. <span>“<span>RelP</span>: Faithful and Efficient Circuit Discovery in Language Models via Relevance Patching.”</span> <em>arXiv Preprint arXiv:2508.21258</em>. <a href="https://arxiv.org/abs/2508.21258">https://arxiv.org/abs/2508.21258</a>.
+</div>
+<div id="ref-shrikumar2016notjust" class="csl-entry">
+Shrikumar, Avanti, Peyton Greenside, Anna Shcherbina, and Anshul Kundaje. 2016. <span>“Not Just a Black Box: Learning Important Features Through Propagating Activation Differences.”</span> <em>arXiv Preprint arXiv:1605.01713</em>. <a href="https://arxiv.org/abs/1605.01713">https://arxiv.org/abs/1605.01713</a>.
+</div>
+<div id="ref-simonyan2014deep" class="csl-entry">
+Simonyan, Karen, Andrea Vedaldi, and Andrew Zisserman. 2014. <span>“Deep Inside Convolutional Networks: Visualising Image Classification Models and Saliency Maps.”</span> <em>International Conference on Learning Representations (ICLR) Workshop</em>. <a href="https://arxiv.org/abs/1312.6034">https://arxiv.org/abs/1312.6034</a>.
+</div>
+<div id="ref-sixt2020explanations" class="csl-entry">
+Sixt, Leon, Maximilian Granz, and Tim Landgraf. 2020. <span>“When Explanations Lie: Why Many Modified <span>BP</span> Attributions Fail.”</span> <em>Proceedings of the 37th International Conference on Machine Learning</em>, Proceedings of machine learning research, vol. 119: 9046–57. <a href="https://arxiv.org/abs/1912.09818">https://arxiv.org/abs/1912.09818</a>.
+</div>
+<div id="ref-sundararajan2017axiomatic" class="csl-entry">
+Sundararajan, Mukund, Ankur Taly, and Qiqi Yan. 2017. <span>“Axiomatic Attribution for Deep Networks.”</span> <em>Proceedings of the 34th International Conference on Machine Learning</em>, Proceedings of machine learning research, vol. 70: 3319–28. <a href="https://arxiv.org/abs/1703.01365">https://arxiv.org/abs/1703.01365</a>.
+</div>
+<div id="ref-zeiler2014visualizing" class="csl-entry">
+Zeiler, Matthew D., and Rob Fergus. 2014. <span>“Visualizing and Understanding Convolutional Networks.”</span> <em>Computer Vision – ECCV 2014</em>, 818–33. <a href="https://doi.org/10.1007/978-3-319-10590-1_53">https://doi.org/10.1007/978-3-319-10590-1_53</a>.
+</div>
+</div>
 
 
-
- ]]></description>
-  <category>news</category>
-  <category>code</category>
-  <category>analysis</category>
-  <guid>https://your-website-url.example.com/posts/post-with-code/</guid>
-  <pubDate>Tue, 30 Jun 2026 22:00:00 GMT</pubDate>
-  <media:content url="https://your-website-url.example.com/posts/post-with-code/image.jpg" medium="image" type="image/jpeg"/>
-</item>
-<item>
-  <title>Welcome To My Blog</title>
-  <dc:creator>Tristan O&#39;Malley</dc:creator>
-  <link>https://your-website-url.example.com/posts/welcome/</link>
-  <description><![CDATA[ 
+</section>
 
 
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
 
-
-
-<p>This is the first post in a Quarto blog. Welcome!</p>
-<p><img src="https://your-website-url.example.com/posts/welcome/thumbnail.jpg" class="img-fluid"></p>
-<p>Since this post doesn’t specify an explicit <code>image</code>, the first image in the post will be used in the listing page of posts.</p>
-
-
-
- ]]></description>
-  <category>news</category>
-  <guid>https://your-website-url.example.com/posts/welcome/</guid>
-  <pubDate>Sat, 27 Jun 2026 22:00:00 GMT</pubDate>
+<ol>
+<li id="fn1"><p>I know, this article never explains the “layer” part of the name. For that, I point to material at the end. But I believe the intuition behind what this score means is much more important than how to compute it.↩︎</p></li>
+<li id="fn2"><p>Mechanistic interpretability researchers tend to refer to latent features or intermediate activations as just “features”. The word “feature” in feature attribution typically refers to input features, but you can use LRP to attribute to latent features as well.↩︎</p></li>
+<li id="fn3"><p>The interpretation of the bias relevance is often a bit less clear. In this case, we would just say that by default (<img src="https://latex.codecogs.com/png.latex?18">&nbsp;°C, no holiday) we already expect <img src="https://latex.codecogs.com/png.latex?180"> sales, which we attribute to the bias term.↩︎</p></li>
+<li id="fn4"><p>Until it isn’t.↩︎</p></li>
+<li id="fn5"><p>Framing LRP as a kind of approximate integration to a zero baseline is a rather unconventional framing, but helpful, I believe. The more conventional lens through which to look at LRP is to view it as a kind of “deep Taylor decomposition”.↩︎</p></li>
+</ol>
+</section></div> ]]></description>
+  <category>interpretability</category>
+  <guid>https://hubertjan.de/posts/lrp-intuition/</guid>
+  <pubDate>Mon, 14 Sep 2026 22:00:00 GMT</pubDate>
+  <media:content url="https://hubertjan.de/posts/lrp-intuition" medium="image"/>
 </item>
 </channel>
 </rss>
