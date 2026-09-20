@@ -1,5 +1,8 @@
 project:
   type: website
+  render:
+    - "*.qmd"
+    - "!posts/*/lesswrong.md"
   resources:
     - CNAME
 
@@ -7,8 +10,14 @@ website:
   description: "Personal page of Hubert Tomaszczak — machine learning security research at Fraunhofer HHI."
   site-url: https://hubertjan.de
   title: "Hubert Tomaszczak"
-  navbar: false
-  page-navigation: false
+  navbar:
+    right:
+      - text: Blog
+        href: index.qmd
+      - text: About
+        href: about.qmd
+      - icon: github
+        href: https://github.com/hubertjan
 
 format:
   html:

@@ -10,7 +10,7 @@ main.content {
 }
 
 /* Section headings on the bio page. */
-h2 {
+.quarto-about-trestles h2 {
   margin-top: 2.5rem;
   font-size: 1.15rem;
   font-weight: 600;
