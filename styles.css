@@ -1,1 +1,77 @@
 /* css styles */
+
+/* Give the single-page layout a bit more breathing room. */
+main.content {
+  padding-bottom: 4rem;
+}
+
+.about-entity .about-image {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Section headings on the bio page. */
+h2 {
+  margin-top: 2.5rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6c757d;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 0.4rem;
+}
+
+/* Experience / education entries.
+   Each entry is: dt = role + date, dd = organisation, dd = description. */
+.experience dl {
+  margin-bottom: 0;
+}
+
+.experience dt {
+  font-weight: 400;
+  margin-top: 1.6rem;
+  overflow: hidden; /* contain the floated date */
+}
+
+.experience dt strong {
+  font-weight: 600;
+}
+
+/* Date range, pushed to the right of the role line. */
+.experience .when {
+  float: right;
+  padding-left: 1rem;
+  color: #868e96;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.experience dd {
+  margin-left: 0;
+  padding-left: 1rem;
+  border-left: 2px solid #e9ecef;
+}
+
+/* First dd: the organisation and location. */
+.experience dt + dd {
+  margin-top: 0.15rem;
+  padding-top: 0.15rem;
+  color: #6c757d;
+  font-size: 0.95em;
+}
+
+/* Second dd: what the role actually was. */
+.experience dd + dd {
+  margin-top: 0.35rem;
+  padding-bottom: 0.15rem;
+  color: #495057;
+}
+
+@media (max-width: 600px) {
+  .experience .when {
+    float: none;
+    display: block;
+    padding-left: 0;
+  }
+}

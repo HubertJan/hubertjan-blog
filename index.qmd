@@ -1,15 +1,114 @@
 ---
 title: "Hubert Tomaszczak"
-listing:
-  contents: posts
-  feed: true
-  sort: "date desc"
-  type: default
-  categories: true
-  sort-ui: false
-  filter-ui: false
-page-layout: full
-title-block-banner: true
+image: profile.jpg
+about:
+  template: trestles
+  image-shape: rounded
+  image-width: 14em
+  links:
+    - icon: envelope
+      text: Email
+      href: mailto:mail@hubertjan.de
+    - icon: linkedin
+      text: LinkedIn
+      href: https://linkedin.com/in/hubert-tomaszczak-84b9412a9/
+    - icon: github
+      text: GitHub
+      href: https://github.com/hubertjan
+
 ---
 
-I am a research assistant at the Fraunhofer Heinrich-Hertz-Institute in Berlin, Germany, and a Master student in Computer Science at the Hasso-Plattner-Institute in Potsdam, Germany.
+I am a research assistant at the **[Fraunhofer Heinrich Hertz Institute](https://www.hhi.fraunhofer.de/)** in Berlin, supervised by Moritz Weckbecker and part of the Explainable AI group led by Dr. Sebastian Lapuschkin, within the Artificial Intelligence department headed by Prof. Dr. Wojciech Samek. I am a Master's student in Computer Science at the Hasso Plattner Institute in Potsdam.
+
+## Research Interests
+
+I currently work on backdoor detection methods for LoRA adapters using weight-space learning. In particular, I focus on better understanding the backdoor mechanism implanted by fine-tuning, by applying feature attribution methods to the meta-classifier model.
+
+More broadly, I am interested in AI safety and interpretability, and I want to better understand fine-tuning phenomena such as emergent misalignment and unexpected generalization.
+
+
+## Education
+
+::: {.experience}
+
+**M.Sc. Computer Science** [October 2025 – present]{.when}
+: [Hasso Plattner Institute](https://hpi.de/), University of Potsdam
+: Expected graduation 2027.
+
+**B.Sc. Computer Science** [Oct 2022 – November 2025]{.when}
+: [Hasso Plattner Institute](https://hpi.de/), University of Potsdam
+
+
+:::
+
+
+## Employment
+
+::: {.experience}
+
+**Research Assistant** — Explainable AI Group [Oct 2025 – present]{.when}
+: [Fraunhofer Heinrich-Hertz-Institute](https://www.hhi.fraunhofer.de/), Berlin
+: Developed a training-free method that reliably eliminates backdoors in LoRA adapters across all tested cases, and that surfaces the circuits responsible for them. This extends my bachelor thesis on weight-space classification using LRP.
+
+**Software Engineer (Working Student)** — SAP AI Core [Jan 2025 – Sep 2025]{.when}
+: [SAP](https://www.sap.com/), Potsdam
+: Designed and implemented the API endpoints for a new fine-tuning service, cutting time-to-deployment for custom LoRA adapters from weeks to a single day. Built an end-to-end automated test suite for the fine-tuning APIs that replaced roughly an hour of manual verification with seconds, reducing developer friction and GPU usage.
+
+**Software Engineer (Working Student)** [Dec 2022 – Dec 2024]{.when}
+: [SPRYLAB](https://sprylab.com/), Berlin
+: Led end-to-end development of the [Alpen Optics App](https://sprylab.com/en/alpen-optics/?btnsrc=customer-overview), a cross-platform Flutter app that gives customers full control of their Wi-Fi camera system — including reverse-engineering the proprietary communication protocol to unlock real-time video streaming on iOS and Android.
+
+:::
+
+## Experience
+
+::: {.experience}
+
+**Member of Operations & Digital Department** [May 2025 – present]{.when}
+: [START Berlin](https://start-berlin.com/) — Student Entrepreneurship Club, Berlin
+: Building an internal platform that centralises workflows and coordination across 60+ active members and 300+ alumni, improving organisational transparency and cutting operational overhead.
+
+**Member of  Appointment Committee, "AI Open Topic"** [current]{.when}
+: Hasso Plattner Institute, Potsdam
+: Evaluating technical presentations, teaching demos, and interviews of professorship candidates.
+
+**Bachelor Thesis in cooperation with Amazon Berlin** — AI and Sustainability Chair [Mai 2025 – Oct 2025]{.when}
+: [Hasso Plattner Institute](https://hpi.de/), Potsdam
+: Research project on LoRA merging techniques in collaboration with AWS.
+
+
+**Bachelor Project in cooperation with Amazon Berlin** — AI and Sustainability Chair [Oct 2024 – Aug 2025]{.when}
+: [Hasso Plattner Institute](https://hpi.de/), Potsdam
+: Research project on LoRA merging techniques in collaboration with AWS.
+
+
+**Member of Appointment Committee, "Data Systems"** [Okt 2024 – 2025]{.when}
+: Hasso Plattner Institute, Potsdam
+: Evaluating technical presentations, teaching demos, and interviews of professorship candidates.
+
+
+**Data Science Student Project** [Okt 2024 – Mar 2025]{.when}
+: [Endress+Hauser Gruppe](https://hpi.de/), Berlin
+: Presented results to SAP CEO and CTO
+
+
+
+
+
+:::
+
+## Teaching
+
+::: {.experience}
+
+**Teaching Assistant in algorithms & data structures** [SS 2024]{.when}
+: Hasso Plattner Institute, Potsdam
+: Tutored students and graded coursework for algorithms & data structures (SS 24).
+
+**Teaching Assistant in introductory programming lecture** [WS 2023/24]{.when}
+: Hasso Plattner Institute, Potsdam
+: Tutored students and graded coursework for the introductory programming lecture (WS 23/24).
+
+
+:::
+

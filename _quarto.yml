@@ -4,22 +4,16 @@ project:
     - CNAME
 
 website:
-  description: "A blog built with Quarto"
+  description: "Personal page of Hubert Tomaszczak — machine learning security research at Fraunhofer HHI."
   site-url: https://hubertjan.de
-  title: "hubertjan-blog"
-  navbar:
-    right:
-      - about.qmd
-      - icon: github
-        href: https://github.com/
-      - icon: bluesky
-        href: https://bsky.app/
+  title: "Hubert Tomaszczak"
+  navbar: false
+  page-navigation: false
+
 format:
   html:
     theme:
       - cosmo
       - brand
     css: styles.css
-
-
-
+    toc: false
