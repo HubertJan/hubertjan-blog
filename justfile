@@ -1,8 +1,8 @@
 # hubertjan-blog — command documentation
 #
-# A Quarto website published to GitHub Pages (gh-pages branch) and served
-# at https://hubertjan.de (custom domain via the CNAME file, which is listed
-# as a project resource in _quarto.yml so it survives every render).
+# A Quarto website published to GitHub Pages (gh-pages branch of the public
+# repo) and served at https://hubertjan.de (custom domain via the CNAME file,
+# which is listed as a project resource in _quarto.yml so it survives every render).
 #
 # Requirements: quarto (https://quarto.org/docs/get-started/), git.
 # Run `just` with no arguments to list every recipe.
@@ -73,14 +73,28 @@ publish:
 publish-ci:
     quarto publish gh-pages --no-prompt
 
-# Commit and push source changes on main (e.g. `just push "Add post about X"`).
+# Remotes: `private` (hubertjan-blog-private) is where day-to-day work lands —
+# main tracks private/main and remote.pushDefault is set to private, so a bare
+# `git push` goes there. `origin` (hubertjan-blog) is the public mirror; Quarto
+# hard-codes `origin` for gh-pages, so it must stay the public repo.
+
+# Commit and push source changes to the private repo (e.g. `just push "Add post about X"`).
 push message:
     git add -A
     git commit -m "{{message}}"
+    git push private main
+
+# Mirror main to the public repo once the work is ready to be seen.
+sync:
     git push origin main
 
-# The full loop: publish the built site, then push the sources.
-ship message: publish (push message)
+# Show commits on main that are in the private repo but not yet in the public one.
+unsynced:
+    git fetch origin main
+    git log --oneline origin/main..main
+
+# The full loop: publish the built site, push to private, then sync to public.
+ship message: publish (push message) sync
 
 # --- Maintenance -------------------------------------------------------------
 
